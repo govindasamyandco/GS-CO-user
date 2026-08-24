@@ -1,4 +1,4 @@
-// Govindasamy & Co - Customer User App Logic (Side Order Form & Select Item Flow)
+// Govindasamy & Co - Customer User App Logic (Packet Calculation & Side Panel Layout)
 const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Number: 9842932756
 
 let products = [
@@ -9,6 +9,8 @@ let products = [
         baseRate: 1800,
         unit: 'per Bundle',
         bundlePieces: 10,
+        bundlesPerPack: 8,       // 8 bundles per standard master pack/bale
+        compressibility: 0.80,   // Cotton 20% compression factor
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Authentic Panipat woven door mat sold in bundles of 10 pieces with vibrant traditional prints.',
         imageUrl: 'public/assets/Visiting card front.png'
@@ -20,6 +22,8 @@ let products = [
         baseRate: 4500,
         unit: 'per Bundle',
         bundlePieces: 10,
+        bundlesPerPack: 10,      // 10 bundles per standard master pack/bale
+        compressibility: 0.80,   // Cotton 20% compression factor
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Export quality heavyweight cotton floor mats packed in 10-piece bundles with anti-skid backing.',
         imageUrl: 'public/assets/Visiting card back.jpg'
@@ -31,6 +35,8 @@ let products = [
         baseRate: 95,
         unit: 'per Piece',
         bundlePieces: 0,
+        bundlesPerPack: 50,      // 50 single pieces per master pack/bale
+        compressibility: 0.85,
         minOrderNotice: 'Available for individual piece purchase',
         description: 'Economical multi-color entryway mat suitable for home, office, and shop entrances.',
         imageUrl: 'public/assets/logo.jpg'
@@ -42,6 +48,8 @@ let products = [
         baseRate: 6800,
         unit: 'per Bundle',
         bundlePieces: 10,
+        bundlesPerPack: 4,       // 4 bundles per standard master pack/bale
+        compressibility: 0.85,
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Extra long hallway and kitchen runner mats bundled in 10-piece sets.',
         imageUrl: 'public/assets/logo.jpg'
@@ -207,6 +215,30 @@ function toggleItemSelection(productId) {
     updateSidePanel();
 }
 
+/**
+ * Calculates Master Packet / Bale estimation for mixed orders
+ */
+function calculateMasterPacks() {
+    let totalCapacityPoints = 0;
+
+    selectedProductIds.forEach(id => {
+        const prod = products.find(p => p.id === id);
+        const qty = itemQuantities[id] || 1;
+        if (prod) {
+            const bundlesPerPack = prod.bundlesPerPack || 8;
+            const compressibility = prod.compressibility || 0.80;
+            const basePointsPerUnit = (100 / bundlesPerPack) * compressibility;
+            totalCapacityPoints += (basePointsPerUnit * qty);
+        }
+    });
+
+    const estPacks = Math.max(1, Math.ceil(totalCapacityPoints / 100));
+    return {
+        totalPoints: totalCapacityPoints,
+        estPacks: selectedProductIds.size === 0 ? 0 : estPacks
+    };
+}
+
 function updateSidePanel() {
     const count = selectedProductIds.size;
     document.getElementById('sideSelectedBadge').innerText = `${count} Selected`;
@@ -223,6 +255,7 @@ function updateSidePanel() {
             </div>
         `;
         document.getElementById('sideTotalUnits').innerText = '0 Units';
+        document.getElementById('sideTotalPacks').innerText = '0 Bales';
         document.getElementById('sideGrandTotal').innerText = '₹0';
         return;
     }
@@ -262,7 +295,11 @@ function updateSidePanel() {
         sideSelectedList.appendChild(row);
     });
 
+    // Run Packet Calculation
+    const packInfo = calculateMasterPacks();
+
     document.getElementById('sideTotalUnits').innerText = `${totalUnits} Units`;
+    document.getElementById('sideTotalPacks').innerText = `${packInfo.estPacks} Master ${packInfo.estPacks === 1 ? 'Bale' : 'Bales'}`;
     document.getElementById('sideGrandTotal').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
 }
 
@@ -292,6 +329,8 @@ function submitWhatsAppOrder() {
         alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address in the order form on the side.');
         return;
     }
+
+    const packInfo = calculateMasterPacks();
 
     let message = `*NEW MAT ORDER - GOVINDASAMY & CO*\n`;
     message += `====================================\n`;
@@ -326,6 +365,7 @@ function submitWhatsAppOrder() {
     });
 
     message += `====================================\n`;
+    message += `📦 *ESTIMATED MASTER BALES*: *${packInfo.estPacks} Bales/Packs*\n`;
     message += `💰 *TOTAL ESTIMATED RATE*: *₹${grandTotal.toLocaleString('en-IN')}*\n`;
     message += `====================================\n`;
     message += `Please confirm availability & dispatch transport details. Thank you!`;
@@ -356,6 +396,7 @@ function generatePdfInvoice() {
         return;
     }
 
+    const packInfo = calculateMasterPacks();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
@@ -395,7 +436,7 @@ function generatePdfInvoice() {
     doc.setFont("helvetica", "bold");
     doc.text(`Order Date: ${today}`, 130, 45);
     doc.text(`Order Ref: GSC-ORD-${Date.now().toString().slice(-6)}`, 130, 52);
-    doc.text(`Status: Pending Confirmation`, 130, 58);
+    doc.text(`Master Shipping Bales: ${packInfo.estPacks} Bales`, 130, 58);
 
     // 3. Itemized Table Data
     const tableData = [];
@@ -449,25 +490,30 @@ function generatePdfInvoice() {
 
     // 4. Total Calculation Box
     doc.setFillColor(248, 250, 252);
-    doc.rect(120, finalY, 75, 20, 'F');
+    doc.rect(110, finalY, 85, 24, 'F');
     doc.setDrawColor(226, 232, 240);
-    doc.rect(120, finalY, 75, 20, 'D');
+    doc.rect(110, finalY, 85, 24, 'D');
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Est. Master Bales: ${packInfo.estPacks} Bales`, 115, finalY + 8);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(1, 3, 86);
-    doc.text("TOTAL ESTIMATED:", 125, finalY + 12);
+    doc.text("GRAND TOTAL:", 115, finalY + 17);
     
     doc.setTextColor(37, 132, 2); // Emerald Green
     doc.setFontSize(13);
-    doc.text(`₹${grandTotal.toLocaleString('en-IN')}`, 165, finalY + 12);
+    doc.text(`₹${grandTotal.toLocaleString('en-IN')}`, 160, finalY + 17);
 
     // 5. Footer & Instructions
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text("Note: This is an automated Order Inquiry Invoice generated by Govindasamy & Co.", 15, finalY + 30);
-    doc.text("Please share this PDF or order details to WhatsApp: +91 98429 32756 for payment & lorry transport confirmation.", 15, finalY + 35);
+    doc.text("Note: This is an automated Order Inquiry Invoice generated by Govindasamy & Co.", 15, finalY + 32);
+    doc.text("Please share this PDF or order details to WhatsApp: +91 98429 32756 for payment & lorry transport confirmation.", 15, finalY + 37);
 
     // Save PDF
     doc.save(`Govindasamy_Mat_Order_${company.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);

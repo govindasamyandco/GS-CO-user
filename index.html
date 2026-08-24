@@ -109,7 +109,7 @@
             <div class="sticky-order-panel card">
                 <div class="panel-header">
                     <h3><i class="fa-solid fa-file-invoice"></i> Wholesale Order Form</h3>
-                    <span class="selected-badge" id="sideSelectedBadge">0 Items Selected</span>
+                    <span class="selected-badge" id="sideSelectedBadge">0 Selected</span>
                 </div>
 
                 <div class="panel-body">
@@ -126,7 +126,7 @@
                         </div>
                     </div>
 
-                    <!-- Section 2: Company & Customer Info Form -->
+                    <!-- Section 2: Company & Contact Info Form -->
                     <div class="section-block" id="formFieldsBlock">
                         <h4><i class="fa-solid fa-building"></i> Company & Contact Details</h4>
                         
@@ -156,16 +156,23 @@
                         </div>
                     </div>
 
-                    <!-- Section 3: Total Calculation Card -->
+                    <!-- Section 3: Total & Packet Calculation Card -->
                     <div class="side-summary-card">
                         <div class="summary-line">
                             <span>Selected Items:</span>
                             <strong id="sideTotalItems">0</strong>
                         </div>
                         <div class="summary-line">
-                            <span>Total Units:</span>
+                            <span>Total Units Ordered:</span>
                             <strong id="sideTotalUnits">0 Units</strong>
                         </div>
+                        
+                        <!-- Packet Calculation Output Line -->
+                        <div class="summary-line packet-calc-line">
+                            <span><i class="fa-solid fa-boxes-packing"></i> Est. Master Bales / Packs:</span>
+                            <strong class="packet-val" id="sideTotalPacks">0 Bales</strong>
+                        </div>
+
                         <div class="summary-line grand-total-line">
                             <span>Total Estimated Amount:</span>
                             <strong class="grand-total" id="sideGrandTotal">₹0</strong>
