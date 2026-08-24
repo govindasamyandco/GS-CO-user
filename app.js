@@ -1,4 +1,6 @@
-// Govindasamy & Co - Customer User App Logic
+// Govindasamy & Co - Customer User App Logic (Selection & PDF Order Generator)
+const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Number: 9842932756
+
 let products = [
     {
         id: 'p1',
@@ -46,7 +48,8 @@ let products = [
     }
 ];
 
-let cart = [];
+let selectedProductIds = new Set();
+let itemQuantities = {}; // { 'p1': 2, 'p2': 5 }
 let activeCategory = 'ALL';
 let searchQuery = '';
 
@@ -57,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initUserApp() {
     setupEventListeners();
     renderCatalog();
-    updateCartUI();
+    updateSelectionUI();
 }
 
 function setupEventListeners() {
@@ -88,29 +91,39 @@ function setupEventListeners() {
         renderCatalog();
     });
 
-    // Cart Drawer Controls
-    const openCartBtn = document.getElementById('openCartBtn');
-    const closeCartBtn = document.getElementById('closeCartBtn');
-    const cartOverlay = document.getElementById('cartOverlay');
-
-    openCartBtn.addEventListener('click', () => {
-        cartOverlay.classList.remove('hidden');
+    // Open Selected Drawer Button
+    document.getElementById('openSelectedBtn').addEventListener('click', () => {
+        if (selectedProductIds.size === 0) {
+            alert('Please select at least 1 mat product from the catalog first.');
+            return;
+        }
+        openOrderModal();
     });
 
-    closeCartBtn.addEventListener('click', () => {
-        cartOverlay.classList.add('hidden');
+    // Done Button in Floating Bar
+    document.getElementById('doneSelectBtn').addEventListener('click', () => {
+        openOrderModal();
     });
 
-    cartOverlay.addEventListener('click', (e) => {
-        if (e.target === cartOverlay) {
-            cartOverlay.classList.add('hidden');
+    // Close Order Modal
+    document.getElementById('closeOrderModalBtn').addEventListener('click', () => {
+        document.getElementById('orderModalOverlay').classList.add('hidden');
+    });
+
+    document.getElementById('orderModalOverlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('orderModalOverlay')) {
+            document.getElementById('orderModalOverlay').classList.add('hidden');
         }
     });
 
-    // WhatsApp Order Submission
-    const sendWhatsappOrderBtn = document.getElementById('sendWhatsappOrderBtn');
-    sendWhatsappOrderBtn.addEventListener('click', () => {
+    // WhatsApp Submit
+    document.getElementById('sendWhatsappBtn').addEventListener('click', () => {
         submitWhatsAppOrder();
+    });
+
+    // Download PDF Invoice
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+        generatePdfInvoice();
     });
 }
 
@@ -149,12 +162,18 @@ function renderCatalog() {
     }
 
     filtered.forEach(p => {
+        const isSelected = selectedProductIds.has(p.id);
         const isBulkUnit = (p.unit === 'per Bundle' || p.unit === 'per Dozen') && p.bundlePieces > 0;
         const perPieceRate = isBulkUnit ? Math.round(p.baseRate / p.bundlePieces) : 0;
 
         const card = document.createElement('div');
-        card.className = 'product-card';
+        card.className = `product-card ${isSelected ? 'selected' : ''}`;
+        card.setAttribute('onclick', `toggleItemSelection('${p.id}', event)`);
+
         card.innerHTML = `
+            <div class="select-checkbox-wrapper">
+                <input type="checkbox" class="product-select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleItemSelection('${p.id}', event)">
+            </div>
             <div class="card-img-wrapper">
                 <img src="${p.imageUrl}" alt="${p.title}" class="card-img" onerror="this.src='public/assets/logo.jpg'">
                 <span class="category-tag">${p.category}</span>
@@ -169,7 +188,7 @@ function renderCatalog() {
                 <h3 class="product-title">${p.title}</h3>
                 <p class="product-details">${p.description}</p>
 
-                <!-- Customer Purchase Notice -->
+                <!-- Customer Purchase Rule Notice -->
                 <div class="purchase-rule-box">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>${p.minOrderNotice || (isBulkUnit ? `Must be purchased per ${p.unit.replace('per ', '')} (${p.bundlePieces} Pcs)` : 'Available for single piece purchase')}</span>
@@ -188,151 +207,292 @@ function renderCatalog() {
                     </div>
                 </div>
 
-                <div class="card-action-bar">
-                    <div class="qty-control">
-                        <button type="button" class="btn-qty" onclick="changeQty('${p.id}', -1)">-</button>
-                        <span class="qty-val" id="qty_${p.id}">1</span>
-                        <button type="button" class="btn-qty" onclick="changeQty('${p.id}', 1)">+</button>
-                    </div>
-                    <button type="button" class="btn-add-cart" onclick="addToCart('${p.id}')">
-                        <i class="fa-solid fa-cart-plus"></i> Add to Order
-                    </button>
-                </div>
+                <button type="button" class="select-toggle-btn">
+                    <i class="fa-solid ${isSelected ? 'fa-square-check' : 'fa-square'}"></i>
+                    <span>${isSelected ? 'Selected for Order' : 'Click to Select'}</span>
+                </button>
             </div>
         `;
         grid.appendChild(card);
     });
 }
 
-function changeQty(productId, delta) {
-    const qtyElem = document.getElementById(`qty_${productId}`);
-    if (!qtyElem) return;
-    let current = parseInt(qtyElem.innerText) || 1;
-    current = Math.max(1, current + delta);
-    qtyElem.innerText = current;
-}
+function toggleItemSelection(productId, event) {
+    if (event) event.stopPropagation();
 
-function addToCart(productId) {
-    const prod = products.find(p => p.id === productId);
-    if (!prod) return;
-
-    const qtyElem = document.getElementById(`qty_${productId}`);
-    const qty = parseInt(qtyElem ? qtyElem.innerText : '1') || 1;
-
-    const existingIndex = cart.findIndex(item => item.id === productId);
-    if (existingIndex > -1) {
-        cart[existingIndex].qty += qty;
+    if (selectedProductIds.has(productId)) {
+        selectedProductIds.delete(productId);
+        delete itemQuantities[productId];
     } else {
-        cart.push({
-            ...prod,
-            qty: qty
-        });
+        selectedProductIds.add(productId);
+        if (!itemQuantities[productId]) itemQuantities[productId] = 1;
     }
 
-    // Reset qty indicator
-    if (qtyElem) qtyElem.innerText = '1';
-
-    updateCartUI();
-
-    // Show toast or open drawer
-    document.getElementById('cartOverlay').classList.remove('hidden');
+    renderCatalog();
+    updateSelectionUI();
 }
 
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.id !== productId);
-    updateCartUI();
-}
+function updateSelectionUI() {
+    const count = selectedProductIds.size;
+    document.getElementById('selectedCountBadge').innerText = count;
+    document.getElementById('selectedItemsText').innerText = `${count} Mat Item${count === 1 ? '' : 's'} Selected`;
 
-function updateCartUI() {
-    const cartCountBadge = document.getElementById('cartCountBadge');
-    const cartItemsContainer = document.getElementById('cartItemsContainer');
-    const cartTotalItems = document.getElementById('cartTotalItems');
-    const cartTotalPrice = document.getElementById('cartTotalPrice');
-
-    const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-    const totalPrice = cart.reduce((sum, item) => sum + (item.baseRate * item.qty), 0);
-
-    cartCountBadge.innerText = totalQty;
-    cartTotalItems.innerText = totalQty;
-    cartTotalPrice.innerText = `₹${totalPrice.toLocaleString('en-IN')}`;
-
-    if (cart.length === 0) {
-        cartItemsContainer.innerHTML = `
-            <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
-                <i class="fa-solid fa-bag-shopping" style="font-size: 3rem; color: var(--border-color); margin-bottom: 1rem;"></i>
-                <p style="font-weight: 600;">Your order list is empty.</p>
-                <span style="font-size: 0.8rem;">Browse products above and click "Add to Order".</span>
-            </div>
-        `;
-        return;
+    const floatingBar = document.getElementById('floatingBar');
+    if (count > 0) {
+        floatingBar.classList.remove('hidden');
+    } else {
+        floatingBar.classList.add('hidden');
     }
+}
 
-    cartItemsContainer.innerHTML = '';
-    cart.forEach(item => {
-        const itemRow = document.createElement('div');
-        itemRow.className = 'cart-item';
-        itemRow.innerHTML = `
-            <img src="${item.imageUrl}" alt="${item.title}" class="cart-item-img" onerror="this.src='public/assets/logo.jpg'">
-            <div class="cart-item-info">
-                <h4 class="cart-item-title">${item.title}</h4>
-                <div class="cart-item-price">
-                    ₹${item.baseRate.toLocaleString('en-IN')} x ${item.qty} ${item.unit.replace('per ', '')}s
-                    <div style="font-size: 0.8rem; color: var(--text-primary); font-weight: 800;">
-                        = ₹${(item.baseRate * item.qty).toLocaleString('en-IN')}
-                    </div>
+function openOrderModal() {
+    if (selectedProductIds.size === 0) return;
+
+    const listContainer = document.getElementById('selectedItemsList');
+    listContainer.innerHTML = '';
+
+    selectedProductIds.forEach(id => {
+        const prod = products.find(p => p.id === id);
+        if (!prod) return;
+
+        if (!itemQuantities[id]) itemQuantities[id] = 1;
+        const currentQty = itemQuantities[id];
+
+        const row = document.createElement('div');
+        row.className = 'order-item-row';
+        row.innerHTML = `
+            <div class="order-item-detail">
+                <img src="${prod.imageUrl}" alt="${prod.title}" class="order-item-thumb" onerror="this.src='public/assets/logo.jpg'">
+                <div>
+                    <h5 class="order-item-title">${prod.title}</h5>
+                    <span class="order-item-meta">Rate: ₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}</span>
                 </div>
             </div>
-            <button type="button" class="btn-remove-item" onclick="removeFromCart('${item.id}')" title="Remove item">
-                <i class="fa-solid fa-trash-can"></i>
-            </button>
+            <div class="order-item-qty">
+                <label style="font-size:0.8rem; font-weight:600;">Qty:</label>
+                <input type="number" class="qty-input" value="${currentQty}" min="1" onchange="updateItemQty('${id}', this.value)">
+                <span style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">${prod.unit.replace('per ', '')}(s)</span>
+            </div>
         `;
-        cartItemsContainer.appendChild(itemRow);
+        listContainer.appendChild(row);
     });
+
+    updateOrderSummary();
+    document.getElementById('orderModalOverlay').classList.remove('hidden');
 }
 
-function submitWhatsAppOrder() {
-    if (cart.length === 0) {
-        alert('Your order is empty. Please add mat products before ordering.');
-        return;
-    }
+function updateItemQty(id, val) {
+    let parsed = parseInt(val);
+    if (isNaN(parsed) || parsed < 1) parsed = 1;
+    itemQuantities[id] = parsed;
+    updateOrderSummary();
+}
 
-    const name = document.getElementById('custName').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
-    const address = document.getElementById('custAddress').value.trim();
+function updateOrderSummary() {
+    let totalItems = selectedProductIds.size;
+    let totalUnits = 0;
+    let grandTotal = 0;
 
-    if (!name || !phone) {
-        alert('Please enter your Name and Phone Number so we can confirm your order.');
-        return;
-    }
-
-    let message = `*NEW MAT ORDER - Govindasamy & Co*\n`;
-    message += `------------------------------------\n`;
-    message += `👤 *Customer Name*: ${name}\n`;
-    message += `📞 *Phone*: ${phone}\n`;
-    if (address) message += `📍 *Delivery Address*: ${address}\n`;
-    message += `------------------------------------\n`;
-    message += `*ORDER ITEMS*:\n`;
-
-    let totalAmount = 0;
-    cart.forEach((item, index) => {
-        const lineTotal = item.baseRate * item.qty;
-        totalAmount += lineTotal;
-        message += `${index + 1}. *${item.title}*\n`;
-        message += `   - Category: ${item.category}\n`;
-        message += `   - Qty: ${item.qty} ${item.unit.replace('per ', '')}(s)\n`;
-        if (item.bundlePieces > 0) {
-            message += `   - Pack Info: (${item.bundlePieces * item.qty} total pieces)\n`;
+    selectedProductIds.forEach(id => {
+        const prod = products.find(p => p.id === id);
+        const qty = itemQuantities[id] || 1;
+        if (prod) {
+            totalUnits += qty;
+            grandTotal += (prod.baseRate * qty);
         }
-        message += `   - Subtotal: ₹${lineTotal.toLocaleString('en-IN')}\n\n`;
     });
 
-    message += `------------------------------------\n`;
-    message += `💰 *TOTAL ESTIMATED RATE*: *₹${totalAmount.toLocaleString('en-IN')}*\n`;
-    message += `------------------------------------\n`;
-    message += `Please confirm availability and dispatch details. Thank you!`;
+    document.getElementById('summaryItemCount').innerText = totalItems;
+    document.getElementById('summaryTotalUnits').innerText = `${totalUnits} Units`;
+    document.getElementById('summaryGrandTotal').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
+}
+
+/* ==========================================================================
+   WHATSAPP ORDER SUBMISSION (WhatsApp Number: 9842932756)
+   ========================================================================== */
+function submitWhatsAppOrder() {
+    const company = document.getElementById('companyName').value.trim();
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const gst = document.getElementById('custGst').value.trim();
+    const address = document.getElementById('custAddress').value.trim();
+
+    if (!company || !name || !phone || !address) {
+        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address.');
+        return;
+    }
+
+    let message = `*NEW MAT ORDER - GOVINDASAMY & CO*\n`;
+    message += `====================================\n`;
+    message += `🏢 *Company Name*: ${company}\n`;
+    message += `👤 *Contact Person*: ${name}\n`;
+    message += `📞 *Phone/WhatsApp*: ${phone}\n`;
+    if (gst) message += `🆔 *GST No*: ${gst}\n`;
+    message += `📍 *Delivery Address*: ${address}\n`;
+    message += `====================================\n`;
+    message += `*ORDERED MAT ITEMS*:\n\n`;
+
+    let grandTotal = 0;
+    let index = 1;
+
+    selectedProductIds.forEach(id => {
+        const prod = products.find(p => p.id === id);
+        const qty = itemQuantities[id] || 1;
+        if (prod) {
+            const subtotal = prod.baseRate * qty;
+            grandTotal += subtotal;
+
+            message += `${index}. *${prod.title}*\n`;
+            message += `   - Category: ${prod.category}\n`;
+            message += `   - Quantity: *${qty} ${prod.unit.replace('per ', '')}(s)*\n`;
+            if (prod.bundlePieces > 0) {
+                message += `   - Total Pcs: (${qty * prod.bundlePieces} pieces)\n`;
+            }
+            message += `   - Rate: ₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}\n`;
+            message += `   - Subtotal: *₹${subtotal.toLocaleString('en-IN')}*\n\n`;
+            index++;
+        }
+    });
+
+    message += `====================================\n`;
+    message += `💰 *TOTAL ESTIMATED RATE*: *₹${grandTotal.toLocaleString('en-IN')}*\n`;
+    message += `====================================\n`;
+    message += `Please confirm availability & dispatch transport details. Thank you!`;
 
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/919876543210?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
 
     window.open(whatsappUrl, '_blank');
+}
+
+/* ==========================================================================
+   OFFICIAL PDF ORDER INVOICE GENERATOR (jsPDF + AutoTable)
+   ========================================================================== */
+function generatePdfInvoice() {
+    const company = document.getElementById('companyName').value.trim();
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const gst = document.getElementById('custGst').value.trim();
+    const address = document.getElementById('custAddress').value.trim();
+
+    if (!company || !name || !phone || !address) {
+        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address before downloading PDF.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // 1. Header & Brand Title
+    doc.setFillColor(1, 3, 86); // Royal Navy
+    doc.rect(0, 0, 210, 35, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("GOVINDASAMY & CO", 15, 18);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Quality Mat & Textile Products Manufacturer & Wholesaler", 15, 25);
+    doc.text("Email: govindasamy.textitle@gmail.com | Phone: +91 98429 32756", 15, 30);
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("PURCHASE ORDER INVOICE", 130, 20);
+
+    // 2. Invoice Meta & Customer Details
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("CUSTOMER & BILL-TO DETAILS:", 15, 45);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`Company Name: ${company}`, 15, 52);
+    doc.text(`Contact Person: ${name}`, 15, 58);
+    doc.text(`Phone / WhatsApp: ${phone}`, 15, 64);
+    if (gst) doc.text(`GSTIN: ${gst}`, 15, 70);
+    doc.text(`Delivery Address: ${address}`, 15, 76);
+
+    const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+    doc.setFont("helvetica", "bold");
+    doc.text(`Order Date: ${today}`, 130, 45);
+    doc.text(`Order Ref: GSC-ORD-${Date.now().toString().slice(-6)}`, 130, 52);
+    doc.text(`Status: Pending Confirmation`, 130, 58);
+
+    // 3. Itemized Table Data
+    const tableData = [];
+    let grandTotal = 0;
+    let index = 1;
+
+    selectedProductIds.forEach(id => {
+        const prod = products.find(p => p.id === id);
+        const qty = itemQuantities[id] || 1;
+        if (prod) {
+            const subtotal = prod.baseRate * qty;
+            grandTotal += subtotal;
+            
+            const pcsInfo = prod.bundlePieces > 0 ? ` (${qty * prod.bundlePieces} pcs)` : '';
+
+            tableData.push([
+                index.toString(),
+                `${prod.title}\n[${prod.category}]`,
+                `${qty} ${prod.unit.replace('per ', '')}s${pcsInfo}`,
+                `₹${prod.baseRate.toLocaleString('en-IN')}`,
+                `₹${subtotal.toLocaleString('en-IN')}`
+            ]);
+            index++;
+        }
+    });
+
+    // Render Table
+    doc.autoTable({
+        startY: 85,
+        head: [['S.No', 'Product Description', 'Quantity / Pack', 'Unit Rate (₹)', 'Subtotal Amount (₹)']],
+        body: tableData,
+        headStyles: {
+            fillColor: [1, 3, 86],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+        },
+        styles: {
+            fontSize: 9,
+            cellPadding: 4
+        },
+        columnStyles: {
+            0: { cellWidth: 15, halign: 'center' },
+            1: { cellWidth: 80 },
+            2: { cellWidth: 35, halign: 'center' },
+            3: { cellWidth: 30, halign: 'right' },
+            4: { cellWidth: 30, halign: 'right' }
+        }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+
+    // 4. Total Calculation Box
+    doc.setFillColor(248, 250, 252);
+    doc.rect(120, finalY, 75, 20, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(120, finalY, 75, 20, 'D');
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(1, 3, 86);
+    doc.text("TOTAL ESTIMATED:", 125, finalY + 12);
+    
+    doc.setTextColor(37, 132, 2); // Emerald Green
+    doc.setFontSize(13);
+    doc.text(`₹${grandTotal.toLocaleString('en-IN')}`, 165, finalY + 12);
+
+    // 5. Footer & Instructions
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Note: This is an automated Order Inquiry Invoice generated by Govindasamy & Co.", 15, finalY + 30);
+    doc.text("Please share this PDF or order details to WhatsApp: +91 98429 32756 for payment & lorry transport confirmation.", 15, finalY + 35);
+
+    // Save PDF
+    doc.save(`Govindasamy_Mat_Order_${company.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
 }

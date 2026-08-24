@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Govindasamy & Co - Mat Products Wholesale & Retail Catalog</title>
+    <title>Govindasamy & Co - Mat Products Wholesale Catalog</title>
     <link rel="stylesheet" href="styles.css">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF & AutoTable for PDF Invoice Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="white-theme">
 
@@ -33,15 +36,15 @@
                 <input type="text" id="searchInput" placeholder="Search Panipat, Export, Local, Long Mats...">
             </div>
 
-            <!-- Contact & Cart Badge -->
+            <!-- Contact & Selected Badge -->
             <div class="nav-actions">
-                <a href="https://wa.me/919876543210" target="_blank" class="btn btn-whatsapp-header" title="Order via WhatsApp">
-                    <i class="fa-brands fa-whatsapp"></i> <span>Direct WhatsApp</span>
+                <a href="https://wa.me/919842932756" target="_blank" class="btn btn-whatsapp-header" title="Order via WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i> <span>+91 98429 32756</span>
                 </a>
-                <button type="button" class="cart-btn" id="openCartBtn">
-                    <i class="fa-solid fa-bag-shopping"></i>
-                    <span class="cart-label">My Order</span>
-                    <span class="cart-count" id="cartCountBadge">0</span>
+                <button type="button" class="cart-btn" id="openSelectedBtn">
+                    <i class="fa-solid fa-square-check"></i>
+                    <span class="cart-label">Selected Items</span>
+                    <span class="cart-count" id="selectedCountBadge">0</span>
                 </button>
             </div>
         </div>
@@ -53,8 +56,8 @@
     <section class="hero-banner">
         <div class="hero-content">
             <span class="hero-badge">Direct Factory Supply</span>
-            <h2>Premium Panipat, Export & Custom Cotton Mats</h2>
-            <p>Explore our wholesale catalog. Available in full bundles, dozens, and custom lengths.</p>
+            <h2>Select Mat Products & Place Wholesale Order</h2>
+            <p>Select the mats you need below, click <strong>"Done"</strong>, fill your company & quantities, and generate your WhatsApp order or PDF Invoice.</p>
         </div>
         <div class="hero-card-preview">
             <img src="public/assets/Visiting card front.png" alt="Visiting Card Front" class="hero-img">
@@ -84,11 +87,11 @@
             </button>
         </div>
 
-        <!-- Catalog Product Grid -->
+        <!-- Catalog Header -->
         <div class="catalog-header">
             <div>
                 <h2 id="currentCategoryTitle">All Mat Products</h2>
-                <p id="catalogSubtitle">Showing all available products with bundle rates and purchase notices.</p>
+                <p id="catalogSubtitle">Click on any product card or checkbox to select items for your order.</p>
             </div>
             <div class="sort-box">
                 <label for="sortSelect">Sort By:</label>
@@ -107,43 +110,95 @@
     </main>
 
     <!-- ==========================================================================
-         SHOPPING CART / ORDER DRAWER MODAL
+         FLOATING SELECTION DONE BAR (Appears when items are selected)
          ========================================================================== -->
-    <div class="cart-drawer-overlay hidden" id="cartOverlay">
-        <div class="cart-drawer">
-            <div class="drawer-header">
-                <h3><i class="fa-solid fa-bag-shopping"></i> Your Wholesale Order</h3>
-                <button type="button" class="close-drawer-btn" id="closeCartBtn">
+    <div class="floating-selection-bar hidden" id="floatingBar">
+        <div class="selection-bar-content">
+            <div class="selection-info">
+                <i class="fa-solid fa-circle-check"></i>
+                <span><strong id="selectedItemsText">0 Items Selected</strong> — Ready to enter quantities & company info.</span>
+            </div>
+            <button type="button" class="btn btn-done" id="doneSelectBtn">
+                <i class="fa-solid fa-arrow-right"></i> Done (Fill Order Form)
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         ORDER FORM MODAL (Company Name, Quantities, PDF & WhatsApp Output)
+         ========================================================================== -->
+    <div class="cart-drawer-overlay hidden" id="orderModalOverlay">
+        <div class="order-modal">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-file-invoice"></i> Wholesale Order Form & Details</h3>
+                <button type="button" class="close-drawer-btn" id="closeOrderModalBtn">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <div class="drawer-body" id="cartItemsContainer">
-                <!-- Cart items rendered dynamically -->
+            <div class="modal-body">
+                <!-- Selected Items Quantities Section -->
+                <div class="section-block">
+                    <h4><i class="fa-solid fa-list-check"></i> 1. Enter Item Quantities</h4>
+                    <div class="selected-items-list" id="selectedItemsList">
+                        <!-- Dynamic selected items with quantity inputs -->
+                    </div>
+                </div>
+
+                <!-- Customer & Business Info Form -->
+                <div class="section-block">
+                    <h4><i class="fa-solid fa-building"></i> 2. Company & Contact Information</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="companyName"><i class="fa-solid fa-briefcase"></i> Company / Business Name *</label>
+                            <input type="text" id="companyName" class="form-control" placeholder="e.g. Sri Lakshmi Textiles" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="custName"><i class="fa-solid fa-user"></i> Contact Person Name *</label>
+                            <input type="text" id="custName" class="form-control" placeholder="e.g. Mr. K. Ramesh" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="custPhone"><i class="fa-solid fa-phone"></i> WhatsApp / Phone Number *</label>
+                            <input type="tel" id="custPhone" class="form-control" placeholder="e.g. 9876543210" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="custGst"><i class="fa-solid fa-id-card"></i> GST Number (Optional)</label>
+                            <input type="text" id="custGst" class="form-control" placeholder="e.g. 33AAAAA0000A1Z5">
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label for="custAddress"><i class="fa-solid fa-location-dot"></i> Delivery Address / Transport City *</label>
+                            <textarea id="custAddress" class="form-control" rows="2" placeholder="Street address, city, landmark & preferred transport lorry service..." required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Calculation Summary -->
+                <div class="order-summary-card">
+                    <div class="summary-line">
+                        <span>Selected Items Count:</span>
+                        <strong id="summaryItemCount">0</strong>
+                    </div>
+                    <div class="summary-line">
+                        <span>Total Bundles / Quantities:</span>
+                        <strong id="summaryTotalUnits">0 Units</strong>
+                    </div>
+                    <div class="summary-line total-line">
+                        <span>Total Estimated Amount:</span>
+                        <strong class="grand-total" id="summaryGrandTotal">₹0</strong>
+                    </div>
+                </div>
             </div>
 
-            <div class="drawer-footer">
-                <div class="cart-summary">
-                    <div class="summary-row">
-                        <span>Total Items:</span>
-                        <strong id="cartTotalItems">0</strong>
-                    </div>
-                    <div class="summary-row total-row">
-                        <span>Estimated Total Amount:</span>
-                        <strong class="total-price" id="cartTotalPrice">₹0</strong>
-                    </div>
+            <!-- Modal Action Footer (WhatsApp + PDF Invoice) -->
+            <div class="modal-footer">
+                <div class="action-buttons-group">
+                    <button type="button" class="btn btn-whatsapp-action" id="sendWhatsappBtn">
+                        <i class="fa-brands fa-whatsapp"></i> Send to WhatsApp (9842932756)
+                    </button>
+                    <button type="button" class="btn btn-pdf-action" id="downloadPdfBtn">
+                        <i class="fa-solid fa-file-pdf"></i> Download PDF Order Invoice
+                    </button>
                 </div>
-
-                <!-- Customer Info Form for WhatsApp Order -->
-                <div class="customer-info-box">
-                    <input type="text" id="custName" class="form-control" placeholder="Your Name / Business Name" required>
-                    <input type="tel" id="custPhone" class="form-control" placeholder="Phone / WhatsApp Number" required>
-                    <textarea id="custAddress" class="form-control" rows="2" placeholder="Delivery Address / City"></textarea>
-                </div>
-
-                <button type="button" class="btn btn-whatsapp-submit btn-block" id="sendWhatsappOrderBtn">
-                    <i class="fa-brands fa-whatsapp"></i> Send Order via WhatsApp
-                </button>
             </div>
         </div>
     </div>
@@ -160,7 +215,7 @@
             </div>
             <div class="footer-contact">
                 <p><i class="fa-solid fa-envelope"></i> govindasamy.textitle@gmail.com</p>
-                <p><i class="fa-solid fa-phone"></i> Contact Sales: +91 98765 43210</p>
+                <p><i class="fa-solid fa-phone"></i> WhatsApp Sales: <strong>+91 98429 32756</strong></p>
             </div>
         </div>
     </footer>
