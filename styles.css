@@ -1,7 +1,7 @@
 /* ==========================================================================
    Govindasamy & Co - Premium Classic Business Theme
-   Palette: Deep Royal Navy (#0b132b / #010356), Warm Gold (#d97706 / #b45309),
-            Emerald Green (#258402), Slate Platinum (#f8fafc), WhatsApp Green (#25D366)
+   Layout Isolation & Independent Scroll System
+   Palette: Deep Royal Navy (#010356), Warm Gold (#d97706), Emerald Green (#258402)
    ========================================================================== */
 
 :root {
@@ -39,6 +39,10 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+html, body {
+    overflow-x: hidden;
 }
 
 body.classic-business-theme {
@@ -194,7 +198,7 @@ body.classic-business-theme {
 }
 
 .btn-mobile-order {
-    display: none; /* Visible on mobile screens via media query */
+    display: none;
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: #ffffff;
@@ -250,22 +254,24 @@ body.classic-business-theme {
 }
 
 /* --------------------------------------------------------------------------
-   2. MAIN SPLIT LAYOUT (Catalog Left | Order Form Right)
+   2. MAIN ISOLATED SPLIT LAYOUT
    -------------------------------------------------------------------------- */
 .main-split-container {
     max-width: 1440px;
     margin: 1.5rem auto;
     padding: 0 1.5rem;
     display: grid;
-    grid-template-columns: 1fr 440px;
+    grid-template-columns: 1fr 430px;
     gap: 1.75rem;
+    align-items: start; /* Prevents column height stretching */
 }
 
-/* Catalog Column */
+/* Catalog Column (Independent Left Flow) */
 .catalog-column {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    min-width: 0; /* Prevents grid layout overflow */
 }
 
 .hero-banner {
@@ -413,7 +419,6 @@ body.classic-business-theme {
     box-shadow: var(--shadow-card-hover);
 }
 
-/* Selected Product Card State */
 .product-card.selected {
     border-color: var(--brand-emerald);
     border-top-color: var(--brand-emerald);
@@ -612,11 +617,12 @@ body.classic-business-theme {
 }
 
 /* --------------------------------------------------------------------------
-   4. RIGHT SIDE ORDER FORM PANEL & RESPONSIVE MOBILE DRAWER
+   4. ISOLATED RIGHT SIDE ORDER PANEL (Non-Intrusive & Independent Scroll)
    -------------------------------------------------------------------------- */
 .order-form-column {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .sticky-order-panel {
@@ -630,6 +636,7 @@ body.classic-business-theme {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    max-height: calc(100vh - 110px); /* Isolated Scroll Height */
 }
 
 .panel-header {
@@ -639,6 +646,7 @@ body.classic-business-theme {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
 }
 
 .panel-header-title {
@@ -667,8 +675,26 @@ body.classic-business-theme {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    max-height: calc(100vh - 130px);
-    overflow-y: auto;
+    overflow-y: auto; /* Independent Inner Scrollbar */
+    flex: 1;
+}
+
+/* Custom Scrollbar for Order Form Panel */
+.panel-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.panel-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.panel-body::-webkit-scrollbar-thumb:hover {
+    background: var(--brand-navy);
 }
 
 .section-title {
@@ -863,8 +889,8 @@ body.classic-business-theme {
     width: 100%;
     background: var(--whatsapp-green);
     color: #ffffff;
-    padding: 0.85rem;
-    font-size: 0.95rem;
+    padding: 0.8rem;
+    font-size: 0.92rem;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-sm);
@@ -885,8 +911,8 @@ body.classic-business-theme {
     width: 100%;
     background: var(--brand-navy);
     color: #ffffff;
-    padding: 0.85rem;
-    font-size: 0.95rem;
+    padding: 0.8rem;
+    font-size: 0.92rem;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-sm);
@@ -934,6 +960,7 @@ body.classic-business-theme {
         position: relative;
         top: 0;
         height: 100vh;
+        max-height: 100vh;
         border-radius: 0;
     }
 
