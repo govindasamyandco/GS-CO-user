@@ -1,6 +1,6 @@
 /* ==========================================================================
    Govindasamy & Co - Premium Classic Business Theme
-   Layout Isolation & Independent Scroll System
+   Separate Layer Floating Order Form & Full-Width Catalog Architecture
    Palette: Deep Royal Navy (#010356), Warm Gold (#d97706), Emerald Green (#258402)
    ========================================================================== */
 
@@ -28,7 +28,7 @@
     --radius-lg: 18px;
 
     --transition-fast: 0.2s ease;
-    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
     --shadow-card: 0 6px 25px rgba(0, 0, 0, 0.06);
@@ -156,6 +156,34 @@ body.classic-business-theme {
     gap: 0.85rem;
 }
 
+.btn-header-order {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    padding: 0.6rem 1.1rem;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition-fast);
+}
+
+.btn-header-order:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.header-count-badge {
+    background: var(--brand-gold);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.55rem;
+    border-radius: 12px;
+}
+
 .btn-whatsapp-header {
     background: var(--whatsapp-green);
     color: #ffffff;
@@ -197,29 +225,6 @@ body.classic-business-theme {
     transform: translateY(-1px);
 }
 
-.btn-mobile-order {
-    display: none;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #ffffff;
-    padding: 0.55rem 1rem;
-    border-radius: 25px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.mobile-count-badge {
-    background: var(--brand-gold);
-    color: #ffffff;
-    font-size: 0.72rem;
-    font-weight: 800;
-    padding: 0.15rem 0.5rem;
-    border-radius: 12px;
-}
-
 /* --------------------------------------------------------------------------
    TRUST BAR (Corporate Badges)
    -------------------------------------------------------------------------- */
@@ -254,28 +259,19 @@ body.classic-business-theme {
 }
 
 /* --------------------------------------------------------------------------
-   2. MAIN ISOLATED SPLIT LAYOUT
+   2. FULL-WIDTH CATALOG CONTAINER (100% Un-disturbed Item View)
    -------------------------------------------------------------------------- */
-.main-split-container {
+.main-catalog-container {
     max-width: 1440px;
     margin: 1.5rem auto;
     padding: 0 1.5rem;
-    display: grid;
-    grid-template-columns: 1fr 430px;
-    gap: 1.75rem;
-    align-items: start; /* Prevents column height stretching */
-}
-
-/* Catalog Column (Independent Left Flow) */
-.catalog-column {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    min-width: 0; /* Prevents grid layout overflow */
+    gap: 1.75rem;
 }
 
 .hero-banner {
-    padding: 1.75rem 2rem;
+    padding: 1.75rem 2.25rem;
     background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #0f172a 100%);
     border-radius: var(--radius-lg);
     color: #ffffff;
@@ -304,7 +300,7 @@ body.classic-business-theme {
 
 .hero-content h2 {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.85rem;
+    font-size: 1.95rem;
     font-weight: 800;
     line-height: 1.2;
     margin-bottom: 0.4rem;
@@ -312,8 +308,9 @@ body.classic-business-theme {
 }
 
 .hero-content p {
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     color: #cbd5e1;
+    max-width: 780px;
 }
 
 .hero-img {
@@ -332,18 +329,18 @@ body.classic-business-theme {
 }
 
 .tab-btn {
-    padding: 0.65rem 1.25rem;
+    padding: 0.7rem 1.4rem;
     background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 30px;
     font-weight: 700;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
     cursor: pointer;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.55rem;
     transition: var(--transition-fast);
     box-shadow: var(--shadow-sm);
 }
@@ -370,18 +367,18 @@ body.classic-business-theme {
 
 .catalog-header h2 {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.55rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: var(--brand-navy);
 }
 
 .catalog-header p {
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     color: var(--text-secondary);
 }
 
 .filter-select {
-    padding: 0.5rem 0.85rem;
+    padding: 0.55rem 0.95rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: #ffffff;
@@ -391,18 +388,18 @@ body.classic-business-theme {
 }
 
 /* --------------------------------------------------------------------------
-   3. PRODUCT CARDS & "SELECT ITEM" BUTTON
+   3. FULL-WIDTH PRODUCT CARDS GRID
    -------------------------------------------------------------------------- */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+    gap: 1.75rem;
 }
 
 .product-card {
     background: #ffffff;
     border: 1px solid var(--border-color);
-    border-top: 3px solid var(--brand-navy);
+    border-top: 3.5px solid var(--brand-navy);
     border-radius: var(--radius-md);
     overflow: hidden;
     display: flex;
@@ -413,12 +410,13 @@ body.classic-business-theme {
 }
 
 .product-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
     border-color: #cbd5e1;
     border-top-color: var(--brand-gold);
     box-shadow: var(--shadow-card-hover);
 }
 
+/* Selected Product Card State */
 .product-card.selected {
     border-color: var(--brand-emerald);
     border-top-color: var(--brand-emerald);
@@ -449,7 +447,7 @@ body.classic-business-theme {
 
 .card-img-wrapper {
     position: relative;
-    height: 200px;
+    height: 215px;
     background: #f1f5f9;
     overflow: hidden;
 }
@@ -501,7 +499,7 @@ body.classic-business-theme {
 }
 
 .card-body {
-    padding: 1.15rem;
+    padding: 1.25rem;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -509,7 +507,7 @@ body.classic-business-theme {
 
 .product-title {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: var(--brand-navy);
     margin-bottom: 0.35rem;
@@ -517,9 +515,9 @@ body.classic-business-theme {
 }
 
 .product-details {
-    font-size: 0.83rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.85rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -617,31 +615,87 @@ body.classic-business-theme {
 }
 
 /* --------------------------------------------------------------------------
-   4. ISOLATED RIGHT SIDE ORDER PANEL (Non-Intrusive & Independent Scroll)
+   4. FLOATING ACTION BUTTON (Pill at bottom right)
    -------------------------------------------------------------------------- */
-.order-form-column {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+.floating-order-bar {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 300;
 }
 
-.sticky-order-panel {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-top: 4px solid var(--brand-navy);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    position: sticky;
-    top: 90px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    max-height: calc(100vh - 110px); /* Isolated Scroll Height */
-}
-
-.panel-header {
-    padding: 1.1rem 1.5rem;
+.floating-order-btn {
     background: linear-gradient(135deg, var(--brand-navy) 0%, #080b42 100%);
+    color: #ffffff;
+    border: 2px solid var(--brand-gold);
+    padding: 0.85rem 1.6rem;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    box-shadow: 0 10px 30px rgba(1, 3, 86, 0.4);
+    transition: var(--transition-fast);
+}
+
+.floating-order-btn:hover {
+    transform: scale(1.04);
+    box-shadow: 0 14px 35px rgba(1, 3, 86, 0.5);
+}
+
+.floating-total-badge {
+    background: var(--brand-emerald);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   5. SEPARATE FLOATING LAYER (Slide Drawer Overlay)
+   -------------------------------------------------------------------------- */
+.layer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 450;
+    transition: opacity 0.3s ease;
+}
+
+.separate-order-layer {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 500px;
+    max-width: 92vw;
+    height: 100vh;
+    z-index: 500;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.separate-order-layer.layer-open {
+    right: 0;
+}
+
+.layer-content-card {
+    background: #ffffff;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+    border-left: 4px solid var(--brand-gold);
+}
+
+.layer-header {
+    padding: 1.25rem 1.6rem;
+    background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #010356 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -649,52 +703,68 @@ body.classic-business-theme {
     flex-shrink: 0;
 }
 
-.panel-header-title {
+.layer-title-group {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.75rem;
 }
 
-.panel-header h3 {
+.layer-title-group i {
+    font-size: 1.5rem;
+    color: var(--brand-gold);
+}
+
+.layer-title-group h3 {
     font-family: 'Outfit', sans-serif;
     font-size: 1.25rem;
     font-weight: 800;
+    line-height: 1.2;
 }
 
-.selected-badge {
-    background: var(--brand-gold);
-    color: #ffffff;
+.layer-subtitle {
     font-size: 0.75rem;
-    font-weight: 800;
-    padding: 0.25rem 0.65rem;
-    border-radius: 12px;
+    color: #cbd5e1;
 }
 
-.panel-body {
-    padding: 1.25rem;
+.btn-close-layer {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #ffffff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+}
+
+.btn-close-layer:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.layer-body {
+    padding: 1.4rem;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    overflow-y: auto; /* Independent Inner Scrollbar */
+    gap: 1.3rem;
+    overflow-y: auto;
     flex: 1;
 }
 
-/* Custom Scrollbar for Order Form Panel */
-.panel-body::-webkit-scrollbar {
+/* Scrollbar for Layer */
+.layer-body::-webkit-scrollbar {
     width: 6px;
 }
-
-.panel-body::-webkit-scrollbar-track {
+.layer-body::-webkit-scrollbar-track {
     background: #f1f5f9;
 }
-
-.panel-body::-webkit-scrollbar-thumb {
+.layer-body::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 3px;
-}
-
-.panel-body::-webkit-scrollbar-thumb:hover {
-    background: var(--brand-navy);
 }
 
 .section-title {
@@ -718,7 +788,7 @@ body.classic-business-theme {
 
 .empty-selection-notice {
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 2.2rem 1rem;
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
     border-radius: var(--radius-sm);
@@ -726,7 +796,7 @@ body.classic-business-theme {
 }
 
 .empty-selection-notice i {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     color: var(--brand-emerald);
     margin-bottom: 0.5rem;
 }
@@ -889,8 +959,8 @@ body.classic-business-theme {
     width: 100%;
     background: var(--whatsapp-green);
     color: #ffffff;
-    padding: 0.8rem;
-    font-size: 0.92rem;
+    padding: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-sm);
@@ -911,8 +981,8 @@ body.classic-business-theme {
     width: 100%;
     background: var(--brand-navy);
     color: #ffffff;
-    padding: 0.8rem;
-    font-size: 0.92rem;
+    padding: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-sm);
@@ -927,53 +997,6 @@ body.classic-business-theme {
 
 .btn-pdf-action:hover {
     background: var(--brand-navy-dark);
-}
-
-/* --------------------------------------------------------------------------
-   5. MOBILE RESPONSIVE MEDIA QUERIES (Slide Drawer for Mobile)
-   -------------------------------------------------------------------------- */
-@media (max-width: 1024px) {
-    .btn-mobile-order {
-        display: flex;
-    }
-
-    .main-split-container {
-        grid-template-columns: 1fr;
-    }
-
-    .order-form-column {
-        position: fixed;
-        top: 0;
-        right: -100%;
-        width: 100%;
-        max-width: 440px;
-        height: 100vh;
-        z-index: 250;
-        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .order-form-column.mobile-open {
-        right: 0;
-    }
-
-    .sticky-order-panel {
-        position: relative;
-        top: 0;
-        height: 100vh;
-        max-height: 100vh;
-        border-radius: 0;
-    }
-
-    .mobile-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(4px);
-        z-index: 200;
-    }
 }
 
 .hidden {

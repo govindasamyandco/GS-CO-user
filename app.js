@@ -1,4 +1,4 @@
-// Govindasamy & Co - Customer User App Logic (Classic Business Theme & Robust PDF Generator)
+// Govindasamy & Co - Customer User App Logic (Separate Floating Layer Architecture)
 const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Sales Number: 9842932756
 
 let products = [
@@ -99,24 +99,16 @@ function setupEventListeners() {
         renderCatalog();
     });
 
-    // Mobile View Drawer Controls
-    const mobileOrderToggleBtn = document.getElementById('mobileOrderToggleBtn');
-    const orderFormColumn = document.getElementById('orderFormColumn');
-    const mobileOverlay = document.getElementById('mobileOverlay');
+    // Separate Layer Open/Close Event Listeners
+    const headerOrderBtn = document.getElementById('headerOrderBtn');
+    const floatingViewOrderBtn = document.getElementById('floatingViewOrderBtn');
+    const closeLayerBtn = document.getElementById('closeLayerBtn');
+    const layerBackdrop = document.getElementById('layerBackdrop');
 
-    if (mobileOrderToggleBtn) {
-        mobileOrderToggleBtn.addEventListener('click', () => {
-            orderFormColumn.classList.toggle('mobile-open');
-            mobileOverlay.classList.toggle('hidden');
-        });
-    }
-
-    if (mobileOverlay) {
-        mobileOverlay.addEventListener('click', () => {
-            orderFormColumn.classList.remove('mobile-open');
-            mobileOverlay.classList.add('hidden');
-        });
-    }
+    if (headerOrderBtn) headerOrderBtn.addEventListener('click', openSeparateLayer);
+    if (floatingViewOrderBtn) floatingViewOrderBtn.addEventListener('click', openSeparateLayer);
+    if (closeLayerBtn) closeLayerBtn.addEventListener('click', closeSeparateLayer);
+    if (layerBackdrop) layerBackdrop.addEventListener('click', closeSeparateLayer);
 
     // WhatsApp Order Button
     document.getElementById('sendWhatsappBtn').addEventListener('click', () => {
@@ -127,6 +119,16 @@ function setupEventListeners() {
     document.getElementById('downloadPdfBtn').addEventListener('click', () => {
         generatePdfInvoice();
     });
+}
+
+function openSeparateLayer() {
+    document.getElementById('separateOrderLayer').classList.add('layer-open');
+    document.getElementById('layerBackdrop').classList.remove('hidden');
+}
+
+function closeSeparateLayer() {
+    document.getElementById('separateOrderLayer').classList.remove('layer-open');
+    document.getElementById('layerBackdrop').classList.add('hidden');
 }
 
 function renderCatalog() {
@@ -260,26 +262,28 @@ function calculateMasterPacks() {
 
 function updateSidePanel() {
     const count = selectedProductIds.size;
-    document.getElementById('sideSelectedBadge').innerText = `${count} Selected`;
-    document.getElementById('sideTotalItems').innerText = `${count} ${count === 1 ? 'Item' : 'Items'}`;
     
-    if (document.getElementById('mobileSelectedCount')) {
-        document.getElementById('mobileSelectedCount').innerText = count;
+    if (document.getElementById('headerSelectedCount')) {
+        document.getElementById('headerSelectedCount').innerText = count;
     }
 
     const sideSelectedList = document.getElementById('sideSelectedList');
+    const floatingOrderBar = document.getElementById('floatingOrderBar');
 
     if (count === 0) {
         sideSelectedList.innerHTML = `
             <div class="empty-selection-notice" id="emptyNotice">
                 <i class="fa-solid fa-hand-pointer"></i>
                 <p>No items selected yet</p>
-                <span>Click <strong>"Select Item"</strong> on any mat card on the left to build your order!</span>
+                <span>Click <strong>"Select Item"</strong> on any mat card to build your wholesale order!</span>
             </div>
         `;
+        document.getElementById('sideTotalItems').innerText = '0 Items';
         document.getElementById('sideTotalUnits').innerText = '0 Units';
         document.getElementById('sideTotalPacks').innerText = '0 Bales';
-        document.getElementById('sideGrandTotal').innerText = '₹0';
+        document.getElementById('sideGrandTotal').innerText = 'Rs. 0';
+        
+        if (floatingOrderBar) floatingOrderBar.classList.add('hidden');
         return;
     }
 
@@ -304,7 +308,7 @@ function updateSidePanel() {
             <div class="side-item-info">
                 <div class="side-item-title">${prod.title}</div>
                 <div class="side-item-rate">
-                    ₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}
+                    Rs. ${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:0.4rem;">
@@ -320,9 +324,17 @@ function updateSidePanel() {
 
     const packInfo = calculateMasterPacks();
 
+    document.getElementById('sideTotalItems').innerText = `${count} ${count === 1 ? 'Item' : 'Items'}`;
     document.getElementById('sideTotalUnits').innerText = `${totalUnits} Units`;
     document.getElementById('sideTotalPacks').innerText = `${packInfo.estPacks} Master ${packInfo.estPacks === 1 ? 'Bale' : 'Bales'}`;
-    document.getElementById('sideGrandTotal').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
+    document.getElementById('sideGrandTotal').innerText = `Rs. ${grandTotal.toLocaleString('en-IN')}`;
+
+    // Update Floating Bottom Bar
+    if (floatingOrderBar) {
+        floatingOrderBar.classList.remove('hidden');
+        document.getElementById('floatingBtnText').innerText = `View Order Form (${count} ${count === 1 ? 'Item' : 'Items'})`;
+        document.getElementById('floatingBtnTotal').innerText = `Rs. ${grandTotal.toLocaleString('en-IN')}`;
+    }
 }
 
 function updateItemQty(id, val) {
@@ -348,7 +360,7 @@ function submitWhatsAppOrder() {
     const address = document.getElementById('custAddress').value.trim();
 
     if (!company || !name || !phone || !address) {
-        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address in the order form on the side.');
+        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address in the order form.');
         return;
     }
 
@@ -380,15 +392,15 @@ function submitWhatsAppOrder() {
             if (prod.bundlePieces > 0) {
                 message += `   - Total Pcs: (${qty * prod.bundlePieces} pieces)\n`;
             }
-            message += `   - Rate: ₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}\n`;
-            message += `   - Subtotal: *₹${subtotal.toLocaleString('en-IN')}*\n\n`;
+            message += `   - Rate: Rs. ${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}\n`;
+            message += `   - Subtotal: *Rs. ${subtotal.toLocaleString('en-IN')}*\n\n`;
             index++;
         }
     });
 
     message += `====================================\n`;
     message += `📦 *ESTIMATED MASTER BALES*: *${packInfo.estPacks} Bales/Packs*\n`;
-    message += `💰 *TOTAL ESTIMATED RATE*: *₹${grandTotal.toLocaleString('en-IN')}*\n`;
+    message += `💰 *TOTAL ESTIMATED RATE*: *Rs. ${grandTotal.toLocaleString('en-IN')}*\n`;
     message += `====================================\n`;
     message += `Please confirm availability & dispatch transport details. Thank you!`;
 
@@ -400,7 +412,6 @@ function submitWhatsAppOrder() {
 
 /* ==========================================================================
    ROBUST & RELIABLE PDF ORDER INVOICE GENERATOR (jsPDF + AutoTable)
-   Fixes: Standard Font Encoding (Rs. instead of ₹), Scope resolution, Multi-page
    ========================================================================== */
 function generatePdfInvoice() {
     if (selectedProductIds.size === 0) {
@@ -415,7 +426,6 @@ function generatePdfInvoice() {
     const address = document.getElementById('custAddress').value.trim() || "Standard Delivery";
 
     try {
-        // Resolve jsPDF Constructor for all browser environments
         const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (window.jsPDF || null);
 
         if (!jsPDFClass) {
@@ -462,7 +472,6 @@ function generatePdfInvoice() {
         doc.text(`Phone / WhatsApp: ${phone}`, 15, 64);
         if (gst) doc.text(`GSTIN: ${gst}`, 15, 70);
         
-        // Multi-line address wrapping
         const splitAddress = doc.splitTextToSize(`Delivery Address: ${address}`, 100);
         doc.text(splitAddress, 15, gst ? 76 : 70);
 
@@ -472,7 +481,7 @@ function generatePdfInvoice() {
         doc.text(`Order Ref: GSC-ORD-${Date.now().toString().slice(-6)}`, 130, 52);
         doc.text(`Master Shipping Bales: ${packInfo.estPacks} Bales`, 130, 58);
 
-        // 3. Itemized Table Data (Use "Rs." instead of "₹" to avoid standard font encoding errors)
+        // 3. Itemized Table Data
         const tableData = [];
         let grandTotal = 0;
         let index = 1;
@@ -525,7 +534,6 @@ function generatePdfInvoice() {
             });
         }
 
-        // Calculate Y position after table
         let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 130;
         if (finalY > 240) {
             doc.addPage();
@@ -559,7 +567,6 @@ function generatePdfInvoice() {
         doc.text("Note: This is an automated Order Inquiry Invoice generated by Govindasamy & Co.", 15, finalY + 32);
         doc.text("Please share this PDF or order details to WhatsApp: +91 98429 32756 for payment & lorry transport confirmation.", 15, finalY + 37);
 
-        // Save PDF file
         const cleanFileName = company.replace(/[^a-zA-Z0-9]/g, '_');
         doc.save(`Govindasamy_Mat_Order_${cleanFileName}.pdf`);
 
