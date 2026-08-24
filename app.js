@@ -1,7 +1,4 @@
-// Govindasamy & Co - Customer User App Logic (100% Live Firebase Firestore Integration)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+// Govindasamy & Co - Customer User App Logic (Firebase Compat SDK for Guaranteed Execution)
 const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Sales Number: 9842932756
 
 // Firebase Configuration
@@ -16,8 +13,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.firestore();
 
 // Live State Variables
 let products = [];
@@ -91,15 +91,15 @@ function initUserApp() {
    1. FIRESTORE LIVE REAL-TIME DATABASE SYNC
    ========================================================================== */
 function setupFirestoreRealtimeListener() {
-    const productsRef = collection(db, "products");
+    const productsRef = db.collection("products");
 
-    onSnapshot(productsRef, async (snapshot) => {
+    productsRef.onSnapshot(async (snapshot) => {
         if (snapshot.empty) {
             console.log("Firestore empty. Seeding initial mat products...");
             for (const item of initialSeedProducts) {
-                await addDoc(productsRef, {
+                await productsRef.add({
                     ...item,
-                    createdAt: serverTimestamp()
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
             return;
@@ -269,7 +269,7 @@ function renderCatalog() {
     });
 }
 
-// Attach toggle function to global window scope for inline onclicks
+// Global window handler for inline onclicks
 window.toggleItemSelection = function(productId) {
     if (selectedProductIds.has(productId)) {
         selectedProductIds.delete(productId);
@@ -412,7 +412,6 @@ async function submitWhatsAppOrder() {
 
     const packInfo = calculateMasterPacks();
 
-    // Record Order in Firestore
     try {
         const orderData = {
             companyName: company,
@@ -422,7 +421,7 @@ async function submitWhatsAppOrder() {
             address: address,
             estBales: packInfo.estPacks,
             status: 'PENDING_CONFIRMATION',
-            createdAt: serverTimestamp(),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             items: Array.from(selectedProductIds).map(id => {
                 const prod = products.find(p => p.id === id);
                 return {
@@ -434,7 +433,7 @@ async function submitWhatsAppOrder() {
             })
         };
 
-        await addDoc(collection(db, "orders"), orderData);
+        await db.collection("orders").add(orderData);
     } catch (err) {
         console.warn("Firestore Order Record Warning:", err);
     }
