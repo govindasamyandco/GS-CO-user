@@ -1,54 +1,76 @@
-// Govindasamy & Co - Customer User App Logic (Separate Floating Layer Architecture)
+// Govindasamy & Co - Customer User App Logic (100% Live Firebase Firestore Integration)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Sales Number: 9842932756
 
-let products = [
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyDvjfa-nhsPwYGUn1BcAv6ukXiFwmaa9ks",
+    authDomain: "govindasamyandco.firebaseapp.com",
+    projectId: "govindasamyandco",
+    storageBucket: "govindasamyandco.firebasestorage.app",
+    messagingSenderId: "154816426732",
+    appId: "1:154816426732:web:9bc68ca9632db51c2dabc9",
+    measurementId: "G-T98D4GNX9V"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Live State Variables
+let products = [];
+let selectedProductIds = new Set();
+let itemQuantities = {}; // { 'p1': 2, 'p2': 5 }
+let activeCategory = 'ALL';
+let searchQuery = '';
+
+// Initial Seed Fallback if Firestore is empty
+const initialSeedProducts = [
     {
-        id: 'p1',
         title: 'Heavy Duty Printed Panipat Door Mat',
         category: 'Panipat Mat',
         baseRate: 1800,
         unit: 'per Bundle',
         bundlePieces: 10,
-        bundlesPerPack: 8,       // 8 bundles per standard master pack/bale
-        compressibility: 0.80,   // Cotton 20% compression factor
+        bundlesPerPack: 8,
+        compressibility: 0.80,
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Authentic Panipat woven door mat sold in bundles of 10 pieces with vibrant traditional prints.',
         imageUrl: 'public/assets/Visiting card front.png'
     },
     {
-        id: 'p2',
         title: 'Premium Handloom Cotton Export Mat',
         category: 'Export Mat',
         baseRate: 4500,
         unit: 'per Bundle',
         bundlePieces: 10,
-        bundlesPerPack: 10,      // 10 bundles per standard master pack/bale
-        compressibility: 0.80,   // Cotton 20% compression factor
+        bundlesPerPack: 10,
+        compressibility: 0.80,
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Export quality heavyweight cotton floor mats packed in 10-piece bundles with anti-skid backing.',
         imageUrl: 'public/assets/Visiting card back.jpg'
     },
     {
-        id: 'p3',
         title: 'Durable Daily Use Local Mat',
         category: 'Local Mat',
         baseRate: 95,
         unit: 'per Piece',
         bundlePieces: 0,
-        bundlesPerPack: 50,      // 50 single pieces per master pack/bale
+        bundlesPerPack: 50,
         compressibility: 0.85,
         minOrderNotice: 'Available for individual piece purchase',
         description: 'Economical multi-color entryway mat suitable for home, office, and shop entrances.',
         imageUrl: 'public/assets/logo.jpg'
     },
     {
-        id: 'p4',
         title: '6ft Anti-Slip Runner Long Mat',
         category: 'Long Mat',
         baseRate: 6800,
         unit: 'per Bundle',
         bundlePieces: 10,
-        bundlesPerPack: 4,       // 4 bundles per standard master pack/bale
+        bundlesPerPack: 4,
         compressibility: 0.85,
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Extra long hallway and kitchen runner mats bundled in 10-piece sets.',
@@ -56,19 +78,43 @@ let products = [
     }
 ];
 
-let selectedProductIds = new Set();
-let itemQuantities = {}; // { 'p1': 2, 'p2': 5 }
-let activeCategory = 'ALL';
-let searchQuery = '';
-
 document.addEventListener('DOMContentLoaded', () => {
     initUserApp();
 });
 
 function initUserApp() {
     setupEventListeners();
-    renderCatalog();
-    updateSidePanel();
+    setupFirestoreRealtimeListener();
+}
+
+/* ==========================================================================
+   1. FIRESTORE LIVE REAL-TIME DATABASE SYNC
+   ========================================================================== */
+function setupFirestoreRealtimeListener() {
+    const productsRef = collection(db, "products");
+
+    onSnapshot(productsRef, async (snapshot) => {
+        if (snapshot.empty) {
+            console.log("Firestore empty. Seeding initial mat products...");
+            for (const item of initialSeedProducts) {
+                await addDoc(productsRef, {
+                    ...item,
+                    createdAt: serverTimestamp()
+                });
+            }
+            return;
+        }
+
+        products = snapshot.docs.map(docSnap => ({
+            id: docSnap.id,
+            ...docSnap.data()
+        }));
+
+        renderCatalog();
+        updateSidePanel();
+    }, (error) => {
+        console.error("Firestore Customer Sync Error:", error);
+    });
 }
 
 function setupEventListeners() {
@@ -99,7 +145,7 @@ function setupEventListeners() {
         renderCatalog();
     });
 
-    // Separate Layer Open/Close Event Listeners
+    // Separate Layer Open/Close Controls
     const headerOrderBtn = document.getElementById('headerOrderBtn');
     const floatingViewOrderBtn = document.getElementById('floatingViewOrderBtn');
     const closeLayerBtn = document.getElementById('closeLayerBtn');
@@ -141,9 +187,9 @@ function renderCatalog() {
     let filtered = products.filter(p => {
         const matchesCategory = activeCategory === 'ALL' || p.category === activeCategory;
         const matchesSearch = !searchQuery || 
-            p.title.toLowerCase().includes(searchQuery) || 
-            p.category.toLowerCase().includes(searchQuery) ||
-            p.description.toLowerCase().includes(searchQuery);
+            (p.title && p.title.toLowerCase().includes(searchQuery)) || 
+            (p.category && p.category.toLowerCase().includes(searchQuery)) ||
+            (p.description && p.description.toLowerCase().includes(searchQuery));
         return matchesCategory && matchesSearch;
     });
 
@@ -191,7 +237,7 @@ function renderCatalog() {
 
             <div class="card-body">
                 <h3 class="product-title">${p.title}</h3>
-                <p class="product-details">${p.description}</p>
+                <p class="product-details">${p.description || ''}</p>
 
                 <!-- Customer Purchase Rule Notice -->
                 <div class="purchase-rule-box">
@@ -223,7 +269,8 @@ function renderCatalog() {
     });
 }
 
-function toggleItemSelection(productId) {
+// Attach toggle function to global window scope for inline onclicks
+window.toggleItemSelection = function(productId) {
     if (selectedProductIds.has(productId)) {
         selectedProductIds.delete(productId);
         delete itemQuantities[productId];
@@ -234,7 +281,7 @@ function toggleItemSelection(productId) {
 
     renderCatalog();
     updateSidePanel();
-}
+};
 
 /**
  * Calculates Master Packet / Bale estimation for mixed orders
@@ -329,7 +376,6 @@ function updateSidePanel() {
     document.getElementById('sideTotalPacks').innerText = `${packInfo.estPacks} Master ${packInfo.estPacks === 1 ? 'Bale' : 'Bales'}`;
     document.getElementById('sideGrandTotal').innerText = `Rs. ${grandTotal.toLocaleString('en-IN')}`;
 
-    // Update Floating Bottom Bar
     if (floatingOrderBar) {
         floatingOrderBar.classList.remove('hidden');
         document.getElementById('floatingBtnText').innerText = `View Order Form (${count} ${count === 1 ? 'Item' : 'Items'})`;
@@ -337,17 +383,17 @@ function updateSidePanel() {
     }
 }
 
-function updateItemQty(id, val) {
+window.updateItemQty = function(id, val) {
     let parsed = parseInt(val);
     if (isNaN(parsed) || parsed < 1) parsed = 1;
     itemQuantities[id] = parsed;
     updateSidePanel();
-}
+};
 
 /* ==========================================================================
-   WHATSAPP ORDER SUBMISSION (WhatsApp Number: 9842932756)
+   WHATSAPP ORDER SUBMISSION & FIRESTORE ORDER RECORDING
    ========================================================================== */
-function submitWhatsAppOrder() {
+async function submitWhatsAppOrder() {
     if (selectedProductIds.size === 0) {
         alert('Please click "Select Item" on at least 1 mat product to build your order.');
         return;
@@ -365,6 +411,33 @@ function submitWhatsAppOrder() {
     }
 
     const packInfo = calculateMasterPacks();
+
+    // Record Order in Firestore
+    try {
+        const orderData = {
+            companyName: company,
+            contactPerson: name,
+            phone: phone,
+            gstNo: gst,
+            address: address,
+            estBales: packInfo.estPacks,
+            status: 'PENDING_CONFIRMATION',
+            createdAt: serverTimestamp(),
+            items: Array.from(selectedProductIds).map(id => {
+                const prod = products.find(p => p.id === id);
+                return {
+                    title: prod.title,
+                    category: prod.category,
+                    qty: itemQuantities[id] || 1,
+                    unitRate: prod.baseRate
+                };
+            })
+        };
+
+        await addDoc(collection(db, "orders"), orderData);
+    } catch (err) {
+        console.warn("Firestore Order Record Warning:", err);
+    }
 
     let message = `*NEW MAT ORDER - GOVINDASAMY & CO*\n`;
     message += `====================================\n`;
@@ -442,7 +515,7 @@ function generatePdfInvoice() {
         const packInfo = calculateMasterPacks();
 
         // 1. Header & Brand Banner
-        doc.setFillColor(1, 3, 86); // Royal Navy (#010356)
+        doc.setFillColor(1, 3, 86);
         doc.rect(0, 0, 210, 35, 'F');
 
         doc.setTextColor(255, 255, 255);
@@ -506,7 +579,7 @@ function generatePdfInvoice() {
             }
         });
 
-        // 4. Render Table with AutoTable Plugin
+        // 4. Render Table
         const autoTableFunc = doc.autoTable || window.jspdfAutoTable;
 
         if (typeof autoTableFunc === 'function') {
@@ -556,7 +629,7 @@ function generatePdfInvoice() {
         doc.setTextColor(1, 3, 86);
         doc.text("GRAND TOTAL:", 115, finalY + 17);
         
-        doc.setTextColor(37, 132, 2); // Emerald Green
+        doc.setTextColor(37, 132, 2);
         doc.setFontSize(13);
         doc.text(`Rs. ${grandTotal.toLocaleString('en-IN')}`, 155, finalY + 17);
 
