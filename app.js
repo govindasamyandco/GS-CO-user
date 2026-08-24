@@ -1,4 +1,4 @@
-// Govindasamy & Co - Customer User App Logic (Selection & PDF Order Generator)
+// Govindasamy & Co - Customer User App Logic (Side Order Form & Select Item Flow)
 const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Number: 9842932756
 
 let products = [
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initUserApp() {
     setupEventListeners();
     renderCatalog();
-    updateSelectionUI();
+    updateSidePanel();
 }
 
 function setupEventListeners() {
@@ -91,37 +91,12 @@ function setupEventListeners() {
         renderCatalog();
     });
 
-    // Open Selected Drawer Button
-    document.getElementById('openSelectedBtn').addEventListener('click', () => {
-        if (selectedProductIds.size === 0) {
-            alert('Please select at least 1 mat product from the catalog first.');
-            return;
-        }
-        openOrderModal();
-    });
-
-    // Done Button in Floating Bar
-    document.getElementById('doneSelectBtn').addEventListener('click', () => {
-        openOrderModal();
-    });
-
-    // Close Order Modal
-    document.getElementById('closeOrderModalBtn').addEventListener('click', () => {
-        document.getElementById('orderModalOverlay').classList.add('hidden');
-    });
-
-    document.getElementById('orderModalOverlay').addEventListener('click', (e) => {
-        if (e.target === document.getElementById('orderModalOverlay')) {
-            document.getElementById('orderModalOverlay').classList.add('hidden');
-        }
-    });
-
-    // WhatsApp Submit
+    // WhatsApp Order Button
     document.getElementById('sendWhatsappBtn').addEventListener('click', () => {
         submitWhatsAppOrder();
     });
 
-    // Download PDF Invoice
+    // Download PDF Invoice Button
     document.getElementById('downloadPdfBtn').addEventListener('click', () => {
         generatePdfInvoice();
     });
@@ -168,12 +143,13 @@ function renderCatalog() {
 
         const card = document.createElement('div');
         card.className = `product-card ${isSelected ? 'selected' : ''}`;
-        card.setAttribute('onclick', `toggleItemSelection('${p.id}', event)`);
 
         card.innerHTML = `
-            <div class="select-checkbox-wrapper">
-                <input type="checkbox" class="product-select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleItemSelection('${p.id}', event)">
+            <!-- Selection Checkmark Badge (Hidden until Selected) -->
+            <div class="select-checkbox-badge" title="Item Selected">
+                <i class="fa-solid fa-check"></i>
             </div>
+
             <div class="card-img-wrapper">
                 <img src="${p.imageUrl}" alt="${p.title}" class="card-img" onerror="this.src='public/assets/logo.jpg'">
                 <span class="category-tag">${p.category}</span>
@@ -207,9 +183,10 @@ function renderCatalog() {
                     </div>
                 </div>
 
-                <button type="button" class="select-toggle-btn">
-                    <i class="fa-solid ${isSelected ? 'fa-square-check' : 'fa-square'}"></i>
-                    <span>${isSelected ? 'Selected for Order' : 'Click to Select'}</span>
+                <!-- Select Item Action Button -->
+                <button type="button" class="btn-select-item" onclick="toggleItemSelection('${p.id}')">
+                    <i class="fa-solid ${isSelected ? 'fa-circle-check' : 'fa-circle-plus'}"></i>
+                    <span>${isSelected ? 'Selected' : 'Select Item'}</span>
                 </button>
             </div>
         `;
@@ -217,9 +194,7 @@ function renderCatalog() {
     });
 }
 
-function toggleItemSelection(productId, event) {
-    if (event) event.stopPropagation();
-
+function toggleItemSelection(productId) {
     if (selectedProductIds.has(productId)) {
         selectedProductIds.delete(productId);
         delete itemQuantities[productId];
@@ -229,27 +204,32 @@ function toggleItemSelection(productId, event) {
     }
 
     renderCatalog();
-    updateSelectionUI();
+    updateSidePanel();
 }
 
-function updateSelectionUI() {
+function updateSidePanel() {
     const count = selectedProductIds.size;
-    document.getElementById('selectedCountBadge').innerText = count;
-    document.getElementById('selectedItemsText').innerText = `${count} Mat Item${count === 1 ? '' : 's'} Selected`;
+    document.getElementById('sideSelectedBadge').innerText = `${count} Selected`;
+    document.getElementById('sideTotalItems').innerText = count;
 
-    const floatingBar = document.getElementById('floatingBar');
-    if (count > 0) {
-        floatingBar.classList.remove('hidden');
-    } else {
-        floatingBar.classList.add('hidden');
+    const sideSelectedList = document.getElementById('sideSelectedList');
+
+    if (count === 0) {
+        sideSelectedList.innerHTML = `
+            <div class="empty-selection-notice" id="emptyNotice">
+                <i class="fa-solid fa-hand-pointer"></i>
+                <p>No items selected yet.</p>
+                <span>Click <strong>"Select Item"</strong> on any mat card to build your wholesale order!</span>
+            </div>
+        `;
+        document.getElementById('sideTotalUnits').innerText = '0 Units';
+        document.getElementById('sideGrandTotal').innerText = '₹0';
+        return;
     }
-}
 
-function openOrderModal() {
-    if (selectedProductIds.size === 0) return;
-
-    const listContainer = document.getElementById('selectedItemsList');
-    listContainer.innerHTML = '';
+    sideSelectedList.innerHTML = '';
+    let totalUnits = 0;
+    let grandTotal = 0;
 
     selectedProductIds.forEach(id => {
         const prod = products.find(p => p.id === id);
@@ -258,59 +238,50 @@ function openOrderModal() {
         if (!itemQuantities[id]) itemQuantities[id] = 1;
         const currentQty = itemQuantities[id];
 
+        totalUnits += currentQty;
+        const itemSubtotal = prod.baseRate * currentQty;
+        grandTotal += itemSubtotal;
+
         const row = document.createElement('div');
-        row.className = 'order-item-row';
+        row.className = 'side-item-row';
         row.innerHTML = `
-            <div class="order-item-detail">
-                <img src="${prod.imageUrl}" alt="${prod.title}" class="order-item-thumb" onerror="this.src='public/assets/logo.jpg'">
-                <div>
-                    <h5 class="order-item-title">${prod.title}</h5>
-                    <span class="order-item-meta">Rate: ₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}</span>
+            <div class="side-item-info">
+                <div class="side-item-title">${prod.title}</div>
+                <div class="side-item-rate">
+                    ₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}
                 </div>
             </div>
-            <div class="order-item-qty">
-                <label style="font-size:0.8rem; font-weight:600;">Qty:</label>
-                <input type="number" class="qty-input" value="${currentQty}" min="1" onchange="updateItemQty('${id}', this.value)">
-                <span style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">${prod.unit.replace('per ', '')}(s)</span>
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+                <input type="number" class="side-qty-input" value="${currentQty}" min="1" onchange="updateItemQty('${id}', this.value)">
+                <span style="font-size:0.75rem; font-weight:600; color:var(--text-secondary);">${prod.unit.replace('per ', '')}(s)</span>
+                <button type="button" class="btn-remove-side" onclick="toggleItemSelection('${id}')" title="Remove item">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
         `;
-        listContainer.appendChild(row);
+        sideSelectedList.appendChild(row);
     });
 
-    updateOrderSummary();
-    document.getElementById('orderModalOverlay').classList.remove('hidden');
+    document.getElementById('sideTotalUnits').innerText = `${totalUnits} Units`;
+    document.getElementById('sideGrandTotal').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
 }
 
 function updateItemQty(id, val) {
     let parsed = parseInt(val);
     if (isNaN(parsed) || parsed < 1) parsed = 1;
     itemQuantities[id] = parsed;
-    updateOrderSummary();
-}
-
-function updateOrderSummary() {
-    let totalItems = selectedProductIds.size;
-    let totalUnits = 0;
-    let grandTotal = 0;
-
-    selectedProductIds.forEach(id => {
-        const prod = products.find(p => p.id === id);
-        const qty = itemQuantities[id] || 1;
-        if (prod) {
-            totalUnits += qty;
-            grandTotal += (prod.baseRate * qty);
-        }
-    });
-
-    document.getElementById('summaryItemCount').innerText = totalItems;
-    document.getElementById('summaryTotalUnits').innerText = `${totalUnits} Units`;
-    document.getElementById('summaryGrandTotal').innerText = `₹${grandTotal.toLocaleString('en-IN')}`;
+    updateSidePanel();
 }
 
 /* ==========================================================================
    WHATSAPP ORDER SUBMISSION (WhatsApp Number: 9842932756)
    ========================================================================== */
 function submitWhatsAppOrder() {
+    if (selectedProductIds.size === 0) {
+        alert('Please click "Select Item" on at least 1 mat product to build your order.');
+        return;
+    }
+
     const company = document.getElementById('companyName').value.trim();
     const name = document.getElementById('custName').value.trim();
     const phone = document.getElementById('custPhone').value.trim();
@@ -318,7 +289,7 @@ function submitWhatsAppOrder() {
     const address = document.getElementById('custAddress').value.trim();
 
     if (!company || !name || !phone || !address) {
-        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address.');
+        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address in the order form on the side.');
         return;
     }
 
@@ -369,6 +340,11 @@ function submitWhatsAppOrder() {
    OFFICIAL PDF ORDER INVOICE GENERATOR (jsPDF + AutoTable)
    ========================================================================== */
 function generatePdfInvoice() {
+    if (selectedProductIds.size === 0) {
+        alert('Please select at least 1 mat item before downloading PDF invoice.');
+        return;
+    }
+
     const company = document.getElementById('companyName').value.trim();
     const name = document.getElementById('custName').value.trim();
     const phone = document.getElementById('custPhone').value.trim();

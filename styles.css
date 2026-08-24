@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Govindasamy & Co - Customer User App Stylesheet (Selection & PDF Order Mode)
+   Govindasamy & Co - Customer User App Stylesheet (Side Panel Split Layout)
    Palette: Crisp White (#ffffff), Slate Off-White (#f8fafc),
             Royal Navy (#010356), Emerald Green (#258402), Gold (#d97706),
-            WhatsApp Green (#25D366), PDF Red (#dc2626)
+            WhatsApp Green (#25D366), PDF Navy/Red
    ========================================================================== */
 
 :root {
@@ -19,8 +19,6 @@
     --brand-gold-light: #fef3c7;
     --whatsapp-green: #25D366;
     --whatsapp-hover: #1da851;
-    --pdf-red: #dc2626;
-    --pdf-hover: #b91c1c;
     
     --text-primary: #0f172a;
     --text-secondary: #475569;
@@ -50,7 +48,6 @@ body.white-theme {
     color: var(--text-primary);
     min-height: 100vh;
     line-height: 1.5;
-    padding-bottom: 5rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -67,7 +64,7 @@ body.white-theme {
 }
 
 .nav-container {
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -143,12 +140,6 @@ body.white-theme {
     font-size: 0.95rem;
 }
 
-.nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
 .btn-whatsapp-header {
     background: var(--whatsapp-green);
     color: #ffffff;
@@ -168,40 +159,33 @@ body.white-theme {
     background: var(--whatsapp-hover);
 }
 
-.cart-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: #ffffff;
-    padding: 0.6rem 1.2rem;
-    border-radius: 25px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    transition: var(--transition-fast);
-}
-
-.cart-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-.cart-count {
-    background: var(--brand-gold);
-    color: #ffffff;
-    font-size: 0.78rem;
-    font-weight: 800;
-    padding: 0.15rem 0.55rem;
-    border-radius: 12px;
-}
-
 /* --------------------------------------------------------------------------
-   2. HERO BANNER
+   2. MAIN SPLIT LAYOUT (Catalog Left | Order Form Right)
    -------------------------------------------------------------------------- */
+.main-split-container {
+    max-width: 1440px;
+    margin: 1.5rem auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 430px;
+    gap: 1.75rem;
+}
+
+@media (max-width: 1024px) {
+    .main-split-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Catalog Column */
+.catalog-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
 .hero-banner {
-    max-width: 1400px;
-    margin: 1.5rem auto 0;
-    padding: 2rem 2.5rem;
+    padding: 1.75rem 2rem;
     background: linear-gradient(135deg, #010356 0%, #1e1b4b 100%);
     border-radius: var(--radius-lg);
     color: #ffffff;
@@ -221,53 +205,44 @@ body.white-theme {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: inline-block;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .hero-content h2 {
     font-family: 'Outfit', sans-serif;
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 700;
     line-height: 1.2;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .hero-content p {
-    font-size: 1rem;
+    font-size: 0.92rem;
     color: #cbd5e1;
 }
 
 .hero-img {
-    height: 110px;
+    height: 95px;
     border-radius: 12px;
     border: 2px solid var(--brand-gold);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* --------------------------------------------------------------------------
-   3. CATEGORY TABS & MAIN CONTAINER
-   -------------------------------------------------------------------------- */
-.main-container {
-    max-width: 1400px;
-    margin: 2rem auto;
-    padding: 0 1.5rem;
-}
-
+/* Category Tabs */
 .category-tabs {
     display: flex;
     gap: 0.75rem;
     overflow-x: auto;
-    padding-bottom: 0.75rem;
-    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
 }
 
 .tab-btn {
-    padding: 0.75rem 1.4rem;
+    padding: 0.65rem 1.2rem;
     background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 30px;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: var(--text-secondary);
     cursor: pointer;
     white-space: nowrap;
@@ -294,25 +269,24 @@ body.white-theme {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
 }
 
 .catalog-header h2 {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--brand-navy);
 }
 
 .catalog-header p {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
 }
 
 .filter-select {
-    padding: 0.55rem 1rem;
+    padding: 0.5rem 0.85rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: #ffffff;
@@ -321,12 +295,12 @@ body.white-theme {
 }
 
 /* --------------------------------------------------------------------------
-   4. PRODUCT CARDS WITH SELECTION CHECKBOX
+   3. PRODUCT GRID & "SELECT ITEM" BUTTON
    -------------------------------------------------------------------------- */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 1.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
 }
 
 .product-card {
@@ -339,7 +313,6 @@ body.white-theme {
     box-shadow: var(--shadow-card);
     transition: var(--transition-normal);
     position: relative;
-    cursor: pointer;
 }
 
 .product-card:hover {
@@ -348,31 +321,38 @@ body.white-theme {
     box-shadow: var(--shadow-card-hover);
 }
 
-/* Card Selected Highlight */
+/* Selected Product Card State */
 .product-card.selected {
     border-color: var(--brand-emerald);
     background: #f0fdf4;
-    box-shadow: 0 8px 25px rgba(37, 132, 2, 0.25);
+    box-shadow: 0 8px 25px rgba(37, 132, 2, 0.22);
 }
 
-.select-checkbox-wrapper {
+/* Checkbox only shown when selected or active */
+.select-checkbox-badge {
+    display: none; /* hidden until selected */
     position: absolute;
     top: 12px;
     left: 12px;
     z-index: 10;
+    background: var(--brand-emerald);
+    color: #ffffff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.product-select-checkbox {
-    width: 24px;
-    height: 24px;
-    accent-color: var(--brand-emerald);
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+.product-card.selected .select-checkbox-badge {
+    display: flex;
 }
 
 .card-img-wrapper {
     position: relative;
-    height: 220px;
+    height: 200px;
     background: #f1f5f9;
     overflow: hidden;
 }
@@ -391,7 +371,7 @@ body.white-theme {
 .category-tag {
     position: absolute;
     top: 12px;
-    left: 45px; /* offset for checkbox */
+    left: 12px;
     background: var(--brand-navy);
     color: #ffffff;
     font-size: 0.72rem;
@@ -401,6 +381,10 @@ body.white-theme {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.product-card.selected .category-tag {
+    left: 48px; /* shift tag right when checkmark badge is visible */
 }
 
 .bundle-badge {
@@ -420,7 +404,7 @@ body.white-theme {
 }
 
 .card-body {
-    padding: 1.25rem;
+    padding: 1.15rem;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -428,15 +412,15 @@ body.white-theme {
 
 .product-title {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--brand-navy);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.35rem;
     line-height: 1.3;
 }
 
 .product-details {
-    font-size: 0.85rem;
+    font-size: 0.83rem;
     color: var(--text-secondary);
     margin-bottom: 0.8rem;
     display: -webkit-box;
@@ -449,14 +433,14 @@ body.white-theme {
     background: #fffbeb;
     border: 1px solid #fcd34d;
     border-radius: var(--radius-sm);
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 0.78rem;
+    padding: 0.45rem 0.65rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.76rem;
     color: #92400e;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .purchase-rule-box i {
@@ -466,7 +450,7 @@ body.white-theme {
 .price-box {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    padding: 0.85rem 1rem;
+    padding: 0.75rem 0.85rem;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
@@ -480,41 +464,43 @@ body.white-theme {
 }
 
 .rate-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     text-transform: uppercase;
     font-weight: 600;
 }
 
 .rate-value {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: var(--brand-emerald);
     font-family: 'Outfit', sans-serif;
 }
 
 .unit-label {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     font-weight: 400;
 }
 
 .piece-rate-hint {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--brand-gold);
     font-weight: 600;
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
 }
 
-.select-toggle-btn {
-    margin-top: 1rem;
+/* "Select Item" Action Button */
+.btn-select-item {
+    margin-top: 0.85rem;
     padding: 0.65rem;
     background: #ffffff;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--brand-navy);
     border-radius: var(--radius-sm);
     font-weight: 700;
     font-size: 0.88rem;
-    color: var(--text-primary);
+    color: var(--brand-navy);
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -522,86 +508,40 @@ body.white-theme {
     transition: var(--transition-fast);
 }
 
-.product-card.selected .select-toggle-btn {
+.btn-select-item:hover {
+    background: var(--brand-navy);
+    color: #ffffff;
+}
+
+.product-card.selected .btn-select-item {
     background: var(--brand-emerald);
     color: #ffffff;
     border-color: var(--brand-emerald);
+    box-shadow: 0 4px 12px rgba(37, 132, 2, 0.3);
 }
 
 /* --------------------------------------------------------------------------
-   5. FLOATING SELECTION DONE ACTION BAR
+   4. RIGHT SIDE ORDER FORM PANEL
    -------------------------------------------------------------------------- */
-.floating-selection-bar {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 800px;
-    background: var(--brand-navy);
-    color: #ffffff;
-    padding: 1rem 1.75rem;
-    border-radius: 40px;
-    box-shadow: 0 12px 35px rgba(1, 3, 86, 0.4);
-    z-index: 150;
-    border: 2px solid var(--brand-gold);
-}
-
-.selection-bar-content {
+.order-form-column {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    flex-direction: column;
 }
 
-.selection-info {
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
-
-.selection-info i {
-    color: #4ade80;
-    font-size: 1.3rem;
-}
-
-.btn-done {
-    background: linear-gradient(135deg, var(--brand-emerald) 0%, #15803d 100%);
-    color: #ffffff;
-    padding: 0.75rem 1.6rem;
-    border-radius: 30px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(37, 132, 2, 0.4);
-    transition: var(--transition-fast);
-}
-
-.btn-done:hover {
-    background: linear-gradient(135deg, #1b6301 0%, #166534 100%);
-    transform: scale(1.03);
-}
-
-/* --------------------------------------------------------------------------
-   6. ORDER FORM MODAL & PDF GENERATOR
-   -------------------------------------------------------------------------- */
-.order-modal {
-    width: 100%;
-    max-width: 720px;
+.sticky-order-panel {
     background: #ffffff;
-    max-height: 90vh;
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    position: sticky;
+    top: 90px;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
     overflow: hidden;
-    margin: auto;
 }
 
-.modal-header {
-    padding: 1.25rem 1.75rem;
+.panel-header {
+    padding: 1.1rem 1.5rem;
     background: var(--brand-navy);
     color: #ffffff;
     display: flex;
@@ -609,154 +549,176 @@ body.white-theme {
     justify-content: space-between;
 }
 
-.modal-header h3 {
+.panel-header h3 {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.5rem;
 }
 
-.modal-body {
-    padding: 1.75rem;
-    flex: 1;
-    overflow-y: auto;
+.selected-badge {
+    background: var(--brand-gold);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.25rem 0.65rem;
+    border-radius: 12px;
+}
+
+.panel-body {
+    padding: 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
 }
 
 .section-block h4 {
     font-family: 'Outfit', sans-serif;
-    font-size: 1.05rem;
+    font-size: 0.98rem;
     color: var(--brand-navy);
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .section-block h4 i {
     color: var(--brand-emerald);
 }
 
-.selected-items-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-}
-
-.order-item-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.85rem 1rem;
+/* Empty Selection Notice */
+.empty-selection-notice {
+    text-align: center;
+    padding: 2rem 1rem;
     background: #f8fafc;
-    border: 1px solid var(--border-color);
+    border: 2px dashed #cbd5e1;
     border-radius: var(--radius-sm);
+    color: var(--text-secondary);
 }
 
-.order-item-detail {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    flex: 1;
+.empty-selection-notice i {
+    font-size: 2.2rem;
+    color: var(--brand-emerald);
+    margin-bottom: 0.5rem;
 }
 
-.order-item-thumb {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 6px;
-}
-
-.order-item-title {
+.empty-selection-notice p {
     font-weight: 700;
     font-size: 0.95rem;
     color: var(--brand-navy);
 }
 
-.order-item-meta {
+.empty-selection-notice span {
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    display: block;
+    margin-top: 0.2rem;
 }
 
-.order-item-qty {
+/* Selected Items List in Side Panel */
+.selected-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.side-item-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
 }
 
-.qty-input {
-    width: 70px;
-    padding: 0.45rem;
-    text-align: center;
+.side-item-info {
+    flex: 1;
+}
+
+.side-item-title {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--brand-navy);
+    line-height: 1.2;
+}
+
+.side-item-rate {
+    font-size: 0.78rem;
+    color: var(--brand-emerald);
+    font-weight: 700;
+}
+
+.side-qty-input {
+    width: 65px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.88rem;
     font-weight: 700;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
+    text-align: center;
 }
 
-/* Form Grid */
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+.btn-remove-side {
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
 }
 
-@media (max-width: 600px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.col-span-2 {
-    grid-column: span 2;
+/* Form Controls */
+.form-group {
+    margin-bottom: 0.85rem;
 }
 
 .form-group label {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
 }
 
 .form-group label i {
     color: var(--brand-emerald);
-    margin-right: 0.3rem;
+    margin-right: 0.25rem;
 }
 
 .form-control {
     width: 100%;
-    padding: 0.65rem 0.85rem;
+    padding: 0.6rem 0.8rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
-.order-summary-card {
+/* Side Summary Card */
+.side-summary-card {
     background: #f8fafc;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    padding: 1rem 1.25rem;
+    padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
 }
 
 .summary-line {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
 }
 
-.total-line {
+.grand-total-line {
     border-top: 1px dashed var(--border-color);
-    padding-top: 0.5rem;
-    font-size: 1.1rem;
+    padding-top: 0.4rem;
+    font-size: 1rem;
     color: var(--brand-navy);
     font-weight: 700;
 }
@@ -764,32 +726,22 @@ body.white-theme {
 .grand-total {
     color: var(--brand-emerald);
     font-family: 'Outfit', sans-serif;
-    font-size: 1.35rem;
+    font-size: 1.25rem;
 }
 
-.modal-footer {
-    padding: 1.25rem 1.75rem;
-    background: #ffffff;
-    border-top: 1px solid var(--border-color);
-}
-
-.action-buttons-group {
+/* Action Buttons (WhatsApp + PDF) */
+.side-action-buttons {
     display: flex;
-    gap: 1rem;
-}
-
-@media (max-width: 600px) {
-    .action-buttons-group {
-        flex-direction: column;
-    }
+    flex-direction: column;
+    gap: 0.65rem;
 }
 
 .btn-whatsapp-action {
-    flex: 1;
+    width: 100%;
     background: var(--whatsapp-green);
     color: #ffffff;
-    padding: 0.85rem;
-    font-size: 0.95rem;
+    padding: 0.8rem;
+    font-size: 0.92rem;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-sm);
@@ -798,7 +750,7 @@ body.white-theme {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35);
     transition: var(--transition-fast);
 }
 
@@ -807,11 +759,11 @@ body.white-theme {
 }
 
 .btn-pdf-action {
-    flex: 1;
+    width: 100%;
     background: var(--brand-navy);
     color: #ffffff;
-    padding: 0.85rem;
-    font-size: 0.95rem;
+    padding: 0.8rem;
+    font-size: 0.92rem;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-sm);
@@ -820,7 +772,7 @@ body.white-theme {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(1, 3, 86, 0.3);
+    box-shadow: 0 4px 12px rgba(1, 3, 86, 0.25);
     transition: var(--transition-fast);
 }
 
@@ -841,7 +793,7 @@ body.white-theme {
 }
 
 .footer-container {
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
     display: flex;
     align-items: center;
