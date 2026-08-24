@@ -1,0 +1,761 @@
+/* ==========================================================================
+   Govindasamy & Co - Customer User App Stylesheet (Clean White Theme)
+   Palette: Crisp White (#ffffff), Slate Off-White (#f8fafc),
+            Royal Navy (#010356), Emerald Green (#258402), Gold (#d97706),
+            WhatsApp Green (#25D366)
+   ========================================================================== */
+
+:root {
+    --bg-page: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --border-hover: #cbd5e1;
+    
+    --brand-navy: #010356;
+    --brand-navy-dark: #00023a;
+    --brand-emerald: #258402;
+    --brand-emerald-hover: #1b6301;
+    --brand-gold: #d97706;
+    --brand-gold-light: #fef3c7;
+    --whatsapp-green: #25D366;
+    --whatsapp-hover: #1da851;
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 12px 30px rgba(1, 3, 86, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.white-theme {
+    font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   1. TOP NAVIGATION HEADER
+   -------------------------------------------------------------------------- */
+.top-nav {
+    background: linear-gradient(135deg, var(--brand-navy) 0%, #080b42 100%);
+    color: #ffffff;
+    padding: 1.1rem 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(1, 3, 86, 0.2);
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.brand-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.brand-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid var(--brand-gold);
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+}
+
+.brand-titles h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+}
+
+.brand-tagline {
+    font-size: 0.8rem;
+    color: #fcd34d;
+    font-weight: 500;
+}
+
+/* Search Box */
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 480px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.65rem 1rem 0.65rem 2.6rem;
+    border-radius: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 0.9rem;
+    backdrop-filter: blur(10px);
+    transition: var(--transition-fast);
+}
+
+.search-box input::placeholder {
+    color: #cbd5e1;
+}
+
+.search-box input:focus {
+    outline: none;
+    background: #ffffff;
+    color: var(--text-primary);
+}
+
+.search-box input:focus + .search-icon, .search-box input:focus ~ .search-icon {
+    color: var(--brand-navy);
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
+
+/* Nav Actions */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-whatsapp-header {
+    background: var(--whatsapp-green);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: 25px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    transition: var(--transition-fast);
+}
+
+.btn-whatsapp-header:hover {
+    background: var(--whatsapp-hover);
+    transform: translateY(-1px);
+}
+
+.cart-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    position: relative;
+    transition: var(--transition-fast);
+}
+
+.cart-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.cart-count {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   2. HERO PROMO BANNER
+   -------------------------------------------------------------------------- */
+.hero-banner {
+    max-width: 1400px;
+    margin: 1.5rem auto 0;
+    padding: 2rem 2.5rem;
+    background: linear-gradient(135deg, #010356 0%, #1e1b4b 100%);
+    border-radius: var(--radius-lg);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 30px rgba(1, 3, 86, 0.15);
+}
+
+.hero-badge {
+    background: var(--brand-gold);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+}
+
+.hero-content h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+}
+
+.hero-content p {
+    font-size: 1rem;
+    color: #cbd5e1;
+}
+
+.hero-img {
+    height: 110px;
+    border-radius: 12px;
+    border: 2px solid var(--brand-gold);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   3. CATEGORY TABS & CATALOG LAYOUT
+   -------------------------------------------------------------------------- */
+.main-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.category-tabs {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.4rem;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.tab-btn:hover {
+    background: #f1f5f9;
+    color: var(--brand-navy);
+}
+
+.tab-btn.active {
+    background: var(--brand-navy);
+    color: #ffffff;
+    border-color: var(--brand-navy);
+    box-shadow: 0 4px 14px rgba(1, 3, 86, 0.25);
+}
+
+.catalog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.catalog-header h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--brand-navy);
+}
+
+.catalog-header p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.filter-select {
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   4. PRODUCT CARDS GRID (WHITE THEME)
+   -------------------------------------------------------------------------- */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 1.75rem;
+}
+
+.product-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-normal);
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    border-color: #cbd5e1;
+    box-shadow: var(--shadow-card-hover);
+}
+
+.card-img-wrapper {
+    position: relative;
+    height: 220px;
+    background: #f1f5f9;
+    overflow: hidden;
+}
+
+.card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.product-card:hover .card-img {
+    transform: scale(1.06);
+}
+
+.category-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: var(--brand-navy);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.bundle-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.product-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--brand-navy);
+    margin-bottom: 0.4rem;
+    line-height: 1.3;
+}
+
+.product-details {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.8rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Purchase Rule Alert Box */
+.purchase-rule-box {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.78rem;
+    color: #92400e;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.purchase-rule-box i {
+    color: #d97706;
+}
+
+.price-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+.rate-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.rate-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--brand-emerald);
+    font-family: 'Outfit', sans-serif;
+}
+
+.unit-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.piece-rate-hint {
+    font-size: 0.75rem;
+    color: var(--brand-gold);
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+/* Card Action Area */
+.card-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.qty-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.btn-qty {
+    width: 32px;
+    height: 36px;
+    background: #f1f5f9;
+    border: none;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.btn-qty:hover {
+    background: #e2e8f0;
+}
+
+.qty-val {
+    width: 36px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.btn-add-cart {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    background: linear-gradient(135deg, var(--brand-emerald) 0%, #15803d 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(37, 132, 2, 0.25);
+    transition: var(--transition-fast);
+}
+
+.btn-add-cart:hover {
+    background: linear-gradient(135deg, #1b6301 0%, #166534 100%);
+    transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   5. CART / ORDER DRAWER MODAL
+   -------------------------------------------------------------------------- */
+.cart-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cart-drawer {
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
+}
+
+.drawer-header {
+    padding: 1.25rem 1.5rem;
+    background: var(--brand-navy);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.drawer-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.close-drawer-btn {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.drawer-body {
+    padding: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+
+.cart-item-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--brand-navy);
+}
+
+.cart-item-price {
+    font-size: 0.85rem;
+    color: var(--brand-emerald);
+    font-weight: 700;
+}
+
+.btn-remove-item {
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.drawer-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.cart-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.total-row {
+    font-size: 1.1rem;
+    color: var(--brand-navy);
+    font-weight: 800;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border-color);
+}
+
+.total-price {
+    color: var(--brand-emerald);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.3rem;
+}
+
+.customer-info-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    font-size: 0.88rem;
+}
+
+.btn-whatsapp-submit {
+    background: var(--whatsapp-green);
+    color: #ffffff;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+    transition: var(--transition-fast);
+}
+
+.btn-whatsapp-submit:hover {
+    background: var(--whatsapp-hover);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Footer */
+.main-footer {
+    background: var(--brand-navy);
+    color: #ffffff;
+    padding: 2rem 1.5rem;
+    margin-top: 4rem;
+}
+
+.footer-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.footer-logo {
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    border: 1px solid var(--brand-gold);
+}
+
+.footer-contact p {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
