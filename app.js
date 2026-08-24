@@ -1,5 +1,5 @@
-// Govindasamy & Co - Customer User App Logic (Packet Calculation & Side Panel Layout)
-const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Number: 9842932756
+// Govindasamy & Co - Customer User App Logic (Classic Business Theme & Responsive Flow)
+const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Sales Number: 9842932756
 
 let products = [
     {
@@ -99,6 +99,25 @@ function setupEventListeners() {
         renderCatalog();
     });
 
+    // Mobile View Drawer Controls
+    const mobileOrderToggleBtn = document.getElementById('mobileOrderToggleBtn');
+    const orderFormColumn = document.getElementById('orderFormColumn');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+
+    if (mobileOrderToggleBtn) {
+        mobileOrderToggleBtn.addEventListener('click', () => {
+            orderFormColumn.classList.toggle('mobile-open');
+            mobileOverlay.classList.toggle('hidden');
+        });
+    }
+
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', () => {
+            orderFormColumn.classList.remove('mobile-open');
+            mobileOverlay.classList.add('hidden');
+        });
+    }
+
     // WhatsApp Order Button
     document.getElementById('sendWhatsappBtn').addEventListener('click', () => {
         submitWhatsAppOrder();
@@ -153,7 +172,7 @@ function renderCatalog() {
         card.className = `product-card ${isSelected ? 'selected' : ''}`;
 
         card.innerHTML = `
-            <!-- Selection Checkmark Badge (Hidden until Selected) -->
+            <!-- Selection Checkmark Badge -->
             <div class="select-checkbox-badge" title="Item Selected">
                 <i class="fa-solid fa-check"></i>
             </div>
@@ -242,7 +261,11 @@ function calculateMasterPacks() {
 function updateSidePanel() {
     const count = selectedProductIds.size;
     document.getElementById('sideSelectedBadge').innerText = `${count} Selected`;
-    document.getElementById('sideTotalItems').innerText = count;
+    document.getElementById('sideTotalItems').innerText = `${count} ${count === 1 ? 'Item' : 'Items'}`;
+    
+    if (document.getElementById('mobileSelectedCount')) {
+        document.getElementById('mobileSelectedCount').innerText = count;
+    }
 
     const sideSelectedList = document.getElementById('sideSelectedList');
 
@@ -250,8 +273,8 @@ function updateSidePanel() {
         sideSelectedList.innerHTML = `
             <div class="empty-selection-notice" id="emptyNotice">
                 <i class="fa-solid fa-hand-pointer"></i>
-                <p>No items selected yet.</p>
-                <span>Click <strong>"Select Item"</strong> on any mat card to build your wholesale order!</span>
+                <p>No items selected yet</p>
+                <span>Click <strong>"Select Item"</strong> on any mat card on the left to build your order!</span>
             </div>
         `;
         document.getElementById('sideTotalUnits').innerText = '0 Units';

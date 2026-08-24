@@ -3,30 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Govindasamy & Co - Mat Products Wholesale Catalog</title>
+    <title>Govindasamy & Co - Premium Wholesale Mat Products Portal</title>
     <link rel="stylesheet" href="styles.css">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- jsPDF & AutoTable for PDF Invoice Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body class="white-theme">
+<body class="classic-business-theme">
 
     <!-- ==========================================================================
-         TOP NAVIGATION & BRAND HEADER
+         TOP BRAND HEADER & WHATSAPP BAR
          ========================================================================== -->
     <header class="top-nav">
         <div class="nav-container">
             <div class="brand-group">
-                <img src="public/assets/logo.jpg" alt="Govindasamy & Co Logo" class="brand-logo">
+                <div class="logo-wrapper">
+                    <img src="public/assets/logo.jpg" alt="Govindasamy & Co Logo" class="brand-logo">
+                </div>
                 <div class="brand-titles">
-                    <h1>Govindasamy & Co</h1>
-                    <span class="brand-tagline">Quality Mat & Textile Products • Wholesale & Retail</span>
+                    <h1>GOVINDASAMY & CO</h1>
+                    <span class="brand-tagline">Quality Mat & Textile Products • Wholesale & Export Portal</span>
                 </div>
             </div>
 
@@ -36,30 +38,53 @@
                 <input type="text" id="searchInput" placeholder="Search Panipat, Export, Local, Long Mats...">
             </div>
 
-            <!-- Contact Header -->
+            <!-- Direct Contact & Mobile Order Toggle -->
             <div class="nav-actions">
-                <a href="https://wa.me/919842932756" target="_blank" class="btn btn-whatsapp-header" title="Order via WhatsApp">
-                    <i class="fa-brands fa-whatsapp"></i> <span>+91 98429 32756</span>
+                <a href="https://wa.me/919842932756" target="_blank" class="btn btn-whatsapp-header">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <div class="whatsapp-info">
+                        <span class="wa-label">WhatsApp Sales</span>
+                        <span class="wa-num">+91 98429 32756</span>
+                    </div>
                 </a>
+
+                <!-- Mobile View Order Trigger Button -->
+                <button type="button" class="btn btn-mobile-order" id="mobileOrderToggleBtn">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Order Form</span>
+                    <span class="mobile-count-badge" id="mobileSelectedCount">0</span>
+                </button>
             </div>
         </div>
     </header>
 
+    <!-- Trust Badges Bar -->
+    <div class="trust-bar">
+        <div class="trust-container">
+            <div class="trust-item"><i class="fa-solid fa-industry"></i> Direct Factory Manufacturing</div>
+            <div class="trust-item"><i class="fa-solid fa-boxes-stacked"></i> Wholesale Bundle & Dozen Rates</div>
+            <div class="trust-item"><i class="fa-solid fa-truck-fast"></i> Pan-India Lorry Transport Dispatch</div>
+            <div class="trust-item"><i class="fa-solid fa-certificate"></i> Premium Cotton Weave Quality</div>
+        </div>
+    </div>
+
     <!-- ==========================================================================
-         MAIN SPLIT LAYOUT (Catalog on Left, Order Form on Right Side)
+         MAIN SPLIT LAYOUT (Catalog Left | Order Form Right)
          ========================================================================== -->
     <main class="main-split-container">
         
-        <!-- LEFT SIDE: CATALOG GRID -->
+        <!-- LEFT COLUMN: CATALOG & PRODUCTS -->
         <section class="catalog-column">
-            <!-- Hero Promo Card -->
+            <!-- Business Hero Banner -->
             <div class="hero-banner">
                 <div class="hero-content">
-                    <span class="hero-badge">Direct Factory Supply</span>
-                    <h2>Wholesale Mat Products Catalog</h2>
-                    <p>Click <strong>"Select Item"</strong> on any mat product to add it to your order form on the side.</p>
+                    <span class="hero-badge"><i class="fa-solid fa-award"></i> Registered Wholesale Supplier</span>
+                    <h2>Wholesale Mat Products & Parcel Order Portal</h2>
+                    <p>Select your required mat items below by clicking <strong>"Select Item"</strong> to automatically generate your order summary, master bale estimates, and WhatsApp / PDF Invoice.</p>
                 </div>
-                <img src="public/assets/Visiting card front.png" alt="Visiting Card Front" class="hero-img">
+                <div class="hero-card-container">
+                    <img src="public/assets/Visiting card front.png" alt="Visiting Card Front" class="hero-img">
+                </div>
             </div>
 
             <!-- Category Filter Tabs -->
@@ -81,16 +106,16 @@
                 </button>
             </div>
 
-            <!-- Catalog Header -->
+            <!-- Catalog Section Header -->
             <div class="catalog-header">
                 <div>
                     <h2 id="currentCategoryTitle">All Mat Products</h2>
-                    <p>Click "Select Item" to select products for your order.</p>
+                    <p>Click "Select Item" to add products to your wholesale order form.</p>
                 </div>
                 <div class="sort-box">
-                    <label for="sortSelect">Sort By:</label>
+                    <label for="sortSelect"><i class="fa-solid fa-arrow-down-short-wide"></i> Sort By:</label>
                     <select id="sortSelect" class="filter-select">
-                        <option value="featured">Featured Items</option>
+                        <option value="featured">Featured Collection</option>
                         <option value="price-low">Price: Low to High</option>
                         <option value="price-high">Price: High to Low</option>
                     </select>
@@ -104,39 +129,48 @@
         </section>
 
 
-        <!-- RIGHT SIDE: ORDER FORM SIDE PANEL -->
-        <aside class="order-form-column">
+        <!-- RIGHT COLUMN: STICKY ORDER FORM SIDE PANEL -->
+        <aside class="order-form-column" id="orderFormColumn">
             <div class="sticky-order-panel card">
                 <div class="panel-header">
-                    <h3><i class="fa-solid fa-file-invoice"></i> Wholesale Order Form</h3>
+                    <div class="panel-header-title">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <h3>Wholesale Purchase Order</h3>
+                    </div>
                     <span class="selected-badge" id="sideSelectedBadge">0 Selected</span>
                 </div>
 
                 <div class="panel-body">
-                    <!-- Section 1: Selected Products & Quantities -->
+                    <!-- Section 1: Selected Items & Quantities -->
                     <div class="section-block">
-                        <h4><i class="fa-solid fa-list-check"></i> Selected Products & Quantities</h4>
+                        <div class="section-title">
+                            <i class="fa-solid fa-list-check"></i>
+                            <h4>1. Selected Items & Quantities</h4>
+                        </div>
                         <div class="selected-items-container" id="sideSelectedList">
                             <!-- Empty State Notice -->
                             <div class="empty-selection-notice" id="emptyNotice">
                                 <i class="fa-solid fa-hand-pointer"></i>
-                                <p>No items selected yet.</p>
-                                <span>Click <strong>"Select Item"</strong> on any mat card to build your wholesale order!</span>
+                                <p>No items selected yet</p>
+                                <span>Click <strong>"Select Item"</strong> on any mat card on the left to build your order!</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Section 2: Company & Contact Info Form -->
-                    <div class="section-block" id="formFieldsBlock">
-                        <h4><i class="fa-solid fa-building"></i> Company & Contact Details</h4>
+                    <!-- Section 2: Business & Contact Form -->
+                    <div class="section-block">
+                        <div class="section-title">
+                            <i class="fa-solid fa-building-columns"></i>
+                            <h4>2. Business & Contact Information</h4>
+                        </div>
                         
                         <div class="form-group">
-                            <label for="companyName"><i class="fa-solid fa-briefcase"></i> Company / Business Name *</label>
-                            <input type="text" id="companyName" class="form-control" placeholder="e.g. Sri Lakshmi Textiles" required>
+                            <label for="companyName"><i class="fa-solid fa-briefcase"></i> Company / Shop Name *</label>
+                            <input type="text" id="companyName" class="form-control" placeholder="e.g. Sri Lakshmi Textiles & Mat Stores" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="custName"><i class="fa-solid fa-user"></i> Contact Person Name *</label>
+                            <label for="custName"><i class="fa-solid fa-user-tie"></i> Contact Person Name *</label>
                             <input type="text" id="custName" class="form-control" placeholder="e.g. Mr. K. Ramesh" required>
                         </div>
 
@@ -151,23 +185,23 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="custAddress"><i class="fa-solid fa-location-dot"></i> Delivery Address / City *</label>
-                            <textarea id="custAddress" class="form-control" rows="2" placeholder="Street address, city, landmark & preferred transport lorry service..." required></textarea>
+                            <label for="custAddress"><i class="fa-solid fa-location-dot"></i> Delivery Address & Lorry Transport City *</label>
+                            <textarea id="custAddress" class="form-control" rows="2" placeholder="Full street address, city, landmark & preferred lorry transport service..." required></textarea>
                         </div>
                     </div>
 
-                    <!-- Section 3: Total & Packet Calculation Card -->
+                    <!-- Section 3: Summary & Master Packet Calculation -->
                     <div class="side-summary-card">
                         <div class="summary-line">
-                            <span>Selected Items:</span>
-                            <strong id="sideTotalItems">0</strong>
+                            <span>Selected Products:</span>
+                            <strong id="sideTotalItems">0 Items</strong>
                         </div>
                         <div class="summary-line">
-                            <span>Total Units Ordered:</span>
+                            <span>Total Ordered Quantity:</span>
                             <strong id="sideTotalUnits">0 Units</strong>
                         </div>
                         
-                        <!-- Packet Calculation Output Line -->
+                        <!-- Packet Calculation Highlight Line -->
                         <div class="summary-line packet-calc-line">
                             <span><i class="fa-solid fa-boxes-packing"></i> Est. Master Bales / Packs:</span>
                             <strong class="packet-val" id="sideTotalPacks">0 Bales</strong>
@@ -194,20 +228,26 @@
 
     </main>
 
-    <!-- Footbar Footer -->
+    <!-- Mobile Panel Overlay Backdrop -->
+    <div class="mobile-overlay hidden" id="mobileOverlay"></div>
+
+    <!-- Corporate Footer -->
     <footer class="main-footer">
         <div class="footer-container">
             <div class="footer-brand">
                 <img src="public/assets/logo.jpg" alt="Govindasamy & Co" class="footer-logo">
                 <div>
-                    <h4>Govindasamy & Co</h4>
-                    <p>Textile & Quality Mat Products Manufacturer & Wholesaler</p>
+                    <h4>GOVINDASAMY & CO</h4>
+                    <p>Quality Mat & Textile Products Manufacturer & Wholesaler</p>
                 </div>
             </div>
             <div class="footer-contact">
                 <p><i class="fa-solid fa-envelope"></i> govindasamy.textitle@gmail.com</p>
-                <p><i class="fa-solid fa-phone"></i> WhatsApp Sales: <strong>+91 98429 32756</strong></p>
+                <p><i class="fa-solid fa-phone"></i> WhatsApp Order Line: <strong>+91 98429 32756</strong></p>
             </div>
+        </div>
+        <div class="footer-copyright">
+            © 2026 Govindasamy & Co. All Rights Reserved. • Classic Wholesale System
         </div>
     </footer>
 
