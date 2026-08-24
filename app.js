@@ -1,4 +1,4 @@
-// Govindasamy & Co - Customer User App Logic (Classic Business Theme & Responsive Flow)
+// Govindasamy & Co - Customer User App Logic (Classic Business Theme & Robust PDF Generator)
 const WHATSAPP_NUMBER = "919842932756"; // WhatsApp Sales Number: 9842932756
 
 let products = [
@@ -318,7 +318,6 @@ function updateSidePanel() {
         sideSelectedList.appendChild(row);
     });
 
-    // Run Packet Calculation
     const packInfo = calculateMasterPacks();
 
     document.getElementById('sideTotalUnits').innerText = `${totalUnits} Units`;
@@ -400,7 +399,8 @@ function submitWhatsAppOrder() {
 }
 
 /* ==========================================================================
-   OFFICIAL PDF ORDER INVOICE GENERATOR (jsPDF + AutoTable)
+   ROBUST & RELIABLE PDF ORDER INVOICE GENERATOR (jsPDF + AutoTable)
+   Fixes: Standard Font Encoding (Rs. instead of ₹), Scope resolution, Multi-page
    ========================================================================== */
 function generatePdfInvoice() {
     if (selectedProductIds.size === 0) {
@@ -408,136 +408,163 @@ function generatePdfInvoice() {
         return;
     }
 
-    const company = document.getElementById('companyName').value.trim();
-    const name = document.getElementById('custName').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
+    const company = document.getElementById('companyName').value.trim() || "Valued Customer";
+    const name = document.getElementById('custName').value.trim() || "Wholesale Buyer";
+    const phone = document.getElementById('custPhone').value.trim() || "N/A";
     const gst = document.getElementById('custGst').value.trim();
-    const address = document.getElementById('custAddress').value.trim();
+    const address = document.getElementById('custAddress').value.trim() || "Standard Delivery";
 
-    if (!company || !name || !phone || !address) {
-        alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address before downloading PDF.');
-        return;
+    try {
+        // Resolve jsPDF Constructor for all browser environments
+        const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (window.jsPDF || null);
+
+        if (!jsPDFClass) {
+            alert('PDF Generator library is loading or blocked. Please refresh the page and try again.');
+            return;
+        }
+
+        const doc = new jsPDFClass({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const packInfo = calculateMasterPacks();
+
+        // 1. Header & Brand Banner
+        doc.setFillColor(1, 3, 86); // Royal Navy (#010356)
+        doc.rect(0, 0, 210, 35, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.text("GOVINDASAMY & CO", 15, 18);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text("Quality Mat & Textile Products Manufacturer & Wholesaler", 15, 25);
+        doc.text("Email: govindasamy.textitle@gmail.com | Phone: +91 98429 32756", 15, 30);
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("PURCHASE ORDER INVOICE", 130, 20);
+
+        // 2. Customer Details Box
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("CUSTOMER & BILL-TO DETAILS:", 15, 45);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(`Company Name: ${company}`, 15, 52);
+        doc.text(`Contact Person: ${name}`, 15, 58);
+        doc.text(`Phone / WhatsApp: ${phone}`, 15, 64);
+        if (gst) doc.text(`GSTIN: ${gst}`, 15, 70);
+        
+        // Multi-line address wrapping
+        const splitAddress = doc.splitTextToSize(`Delivery Address: ${address}`, 100);
+        doc.text(splitAddress, 15, gst ? 76 : 70);
+
+        const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+        doc.setFont("helvetica", "bold");
+        doc.text(`Order Date: ${today}`, 130, 45);
+        doc.text(`Order Ref: GSC-ORD-${Date.now().toString().slice(-6)}`, 130, 52);
+        doc.text(`Master Shipping Bales: ${packInfo.estPacks} Bales`, 130, 58);
+
+        // 3. Itemized Table Data (Use "Rs." instead of "₹" to avoid standard font encoding errors)
+        const tableData = [];
+        let grandTotal = 0;
+        let index = 1;
+
+        selectedProductIds.forEach(id => {
+            const prod = products.find(p => p.id === id);
+            const qty = itemQuantities[id] || 1;
+            if (prod) {
+                const subtotal = prod.baseRate * qty;
+                grandTotal += subtotal;
+                
+                const pcsInfo = prod.bundlePieces > 0 ? ` (${qty * prod.bundlePieces} pcs)` : '';
+
+                tableData.push([
+                    index.toString(),
+                    `${prod.title} [${prod.category}]`,
+                    `${qty} ${prod.unit.replace('per ', '')}s${pcsInfo}`,
+                    `Rs. ${prod.baseRate.toLocaleString('en-IN')}`,
+                    `Rs. ${subtotal.toLocaleString('en-IN')}`
+                ]);
+                index++;
+            }
+        });
+
+        // 4. Render Table with AutoTable Plugin
+        const autoTableFunc = doc.autoTable || window.jspdfAutoTable;
+
+        if (typeof autoTableFunc === 'function') {
+            autoTableFunc.call(doc, {
+                startY: 85,
+                head: [['S.No', 'Product Description', 'Quantity / Pack', 'Unit Rate', 'Subtotal Amount']],
+                body: tableData,
+                headStyles: {
+                    fillColor: [1, 3, 86],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 4,
+                    font: 'helvetica'
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center' },
+                    1: { cellWidth: 80 },
+                    2: { cellWidth: 35, halign: 'center' },
+                    3: { cellWidth: 30, halign: 'right' },
+                    4: { cellWidth: 30, halign: 'right' }
+                }
+            });
+        }
+
+        // Calculate Y position after table
+        let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 130;
+        if (finalY > 240) {
+            doc.addPage();
+            finalY = 20;
+        }
+
+        // 5. Total Calculation Summary Box
+        doc.setFillColor(248, 250, 252);
+        doc.rect(110, finalY, 85, 24, 'F');
+        doc.setDrawColor(226, 232, 240);
+        doc.rect(110, finalY, 85, 24, 'D');
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Est. Master Bales: ${packInfo.estPacks} Bales`, 115, finalY + 8);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(1, 3, 86);
+        doc.text("GRAND TOTAL:", 115, finalY + 17);
+        
+        doc.setTextColor(37, 132, 2); // Emerald Green
+        doc.setFontSize(13);
+        doc.text(`Rs. ${grandTotal.toLocaleString('en-IN')}`, 155, finalY + 17);
+
+        // 6. Footer & Terms
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Note: This is an automated Order Inquiry Invoice generated by Govindasamy & Co.", 15, finalY + 32);
+        doc.text("Please share this PDF or order details to WhatsApp: +91 98429 32756 for payment & lorry transport confirmation.", 15, finalY + 37);
+
+        // Save PDF file
+        const cleanFileName = company.replace(/[^a-zA-Z0-9]/g, '_');
+        doc.save(`Govindasamy_Mat_Order_${cleanFileName}.pdf`);
+
+    } catch (err) {
+        console.error("PDF Generation Exception:", err);
+        alert("An error occurred while generating PDF: " + err.message);
     }
-
-    const packInfo = calculateMasterPacks();
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // 1. Header & Brand Title
-    doc.setFillColor(1, 3, 86); // Royal Navy
-    doc.rect(0, 0, 210, 35, 'F');
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("GOVINDASAMY & CO", 15, 18);
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text("Quality Mat & Textile Products Manufacturer & Wholesaler", 15, 25);
-    doc.text("Email: govindasamy.textitle@gmail.com | Phone: +91 98429 32756", 15, 30);
-
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("PURCHASE ORDER INVOICE", 130, 20);
-
-    // 2. Invoice Meta & Customer Details
-    doc.setTextColor(15, 23, 42);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("CUSTOMER & BILL-TO DETAILS:", 15, 45);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text(`Company Name: ${company}`, 15, 52);
-    doc.text(`Contact Person: ${name}`, 15, 58);
-    doc.text(`Phone / WhatsApp: ${phone}`, 15, 64);
-    if (gst) doc.text(`GSTIN: ${gst}`, 15, 70);
-    doc.text(`Delivery Address: ${address}`, 15, 76);
-
-    const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.setFont("helvetica", "bold");
-    doc.text(`Order Date: ${today}`, 130, 45);
-    doc.text(`Order Ref: GSC-ORD-${Date.now().toString().slice(-6)}`, 130, 52);
-    doc.text(`Master Shipping Bales: ${packInfo.estPacks} Bales`, 130, 58);
-
-    // 3. Itemized Table Data
-    const tableData = [];
-    let grandTotal = 0;
-    let index = 1;
-
-    selectedProductIds.forEach(id => {
-        const prod = products.find(p => p.id === id);
-        const qty = itemQuantities[id] || 1;
-        if (prod) {
-            const subtotal = prod.baseRate * qty;
-            grandTotal += subtotal;
-            
-            const pcsInfo = prod.bundlePieces > 0 ? ` (${qty * prod.bundlePieces} pcs)` : '';
-
-            tableData.push([
-                index.toString(),
-                `${prod.title}\n[${prod.category}]`,
-                `${qty} ${prod.unit.replace('per ', '')}s${pcsInfo}`,
-                `₹${prod.baseRate.toLocaleString('en-IN')}`,
-                `₹${subtotal.toLocaleString('en-IN')}`
-            ]);
-            index++;
-        }
-    });
-
-    // Render Table
-    doc.autoTable({
-        startY: 85,
-        head: [['S.No', 'Product Description', 'Quantity / Pack', 'Unit Rate (₹)', 'Subtotal Amount (₹)']],
-        body: tableData,
-        headStyles: {
-            fillColor: [1, 3, 86],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
-        },
-        styles: {
-            fontSize: 9,
-            cellPadding: 4
-        },
-        columnStyles: {
-            0: { cellWidth: 15, halign: 'center' },
-            1: { cellWidth: 80 },
-            2: { cellWidth: 35, halign: 'center' },
-            3: { cellWidth: 30, halign: 'right' },
-            4: { cellWidth: 30, halign: 'right' }
-        }
-    });
-
-    const finalY = doc.lastAutoTable.finalY + 10;
-
-    // 4. Total Calculation Box
-    doc.setFillColor(248, 250, 252);
-    doc.rect(110, finalY, 85, 24, 'F');
-    doc.setDrawColor(226, 232, 240);
-    doc.rect(110, finalY, 85, 24, 'D');
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Est. Master Bales: ${packInfo.estPacks} Bales`, 115, finalY + 8);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(1, 3, 86);
-    doc.text("GRAND TOTAL:", 115, finalY + 17);
-    
-    doc.setTextColor(37, 132, 2); // Emerald Green
-    doc.setFontSize(13);
-    doc.text(`₹${grandTotal.toLocaleString('en-IN')}`, 160, finalY + 17);
-
-    // 5. Footer & Instructions
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text("Note: This is an automated Order Inquiry Invoice generated by Govindasamy & Co.", 15, finalY + 32);
-    doc.text("Please share this PDF or order details to WhatsApp: +91 98429 32756 for payment & lorry transport confirmation.", 15, finalY + 37);
-
-    // Save PDF
-    doc.save(`Govindasamy_Mat_Order_${company.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
 }
