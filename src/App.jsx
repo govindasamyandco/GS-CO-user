@@ -117,8 +117,18 @@ export default function App() {
             </div>
           </div>
           <div className="footer-contact">
-            <p><i className="fa-solid fa-envelope"></i> govindasamy.textitle@gmail.com</p>
-            <p><i className="fa-solid fa-phone"></i> WhatsApp Order Line: <strong>+91 98429 32756</strong></p>
+            <p>
+              <a href="https://maps.app.goo.gl/651k1dFnksLthHSq6" target="_blank" rel="noreferrer" style={{ color: '#fcd34d', textDecoration: 'none', fontWeight: 600 }}>
+                <i className="fa-solid fa-location-dot" style={{ color: 'var(--brand-gold)', marginRight: '0.4rem' }}></i>
+                65, Kamaraj St, NMS Compound, Erode Fort, Erode, Tamil Nadu 638001
+              </a>
+            </p>
+            <p><i className="fa-solid fa-envelope" style={{ marginRight: '0.4rem' }}></i> govindasamy.textitle@gmail.com</p>
+            <p style={{ marginTop: '0.4rem' }}>
+              <a href="https://wa.me/919842932756" target="_blank" rel="noreferrer" className="btn-whatsapp-header" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
+                <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.2rem' }}></i> WhatsApp Inquiry
+              </a>
+            </p>
           </div>
         </div>
         <div className="footer-copyright">

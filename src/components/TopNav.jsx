@@ -38,12 +38,16 @@ export default function TopNav({ searchQuery, setSearchQuery, selectedCount, onO
             <span className="header-count-badge">{selectedCount}</span>
           </button>
 
-          <a href="https://wa.me/919842932756" target="_blank" rel="noreferrer" className="btn btn-whatsapp-header">
-            <i className="fa-brands fa-whatsapp"></i>
-            <div className="whatsapp-info">
-              <span className="wa-label">WhatsApp Sales</span>
-              <span className="wa-num">+91 98429 32756</span>
-            </div>
+          {/* WhatsApp Direct Chat Button (No raw phone number displayed) */}
+          <a
+            href="https://wa.me/919842932756"
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-whatsapp-header"
+            title="Chat with Wholesale Sales on WhatsApp"
+          >
+            <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.4rem' }}></i>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>WhatsApp Chat</span>
           </a>
         </div>
       </div>

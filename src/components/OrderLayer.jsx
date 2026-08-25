@@ -285,7 +285,7 @@ export default function OrderLayer({
             {/* Section 4: Action Buttons */}
             <div className="side-action-buttons">
               <button type="button" className="btn btn-whatsapp-action" onClick={handleWhatsAppSubmit}>
-                <i className="fa-brands fa-whatsapp"></i> Send Order to WhatsApp (9842932756)
+                <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.4rem' }}></i> Send Order via WhatsApp
               </button>
               <button type="button" className="btn btn-pdf-action" onClick={handleDownloadPdf}>
                 <i className="fa-solid fa-file-pdf"></i> Download PDF Order Invoice
