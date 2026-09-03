@@ -7,7 +7,9 @@ import CategoryTabs from './components/CategoryTabs';
 import ProductGrid from './components/ProductGrid';
 import FloatingBar from './components/FloatingBar';
 import OrderLayer from './components/OrderLayer';
+import InvoiceModal from './components/InvoiceModal';
 import ModernToastContainer from './components/ModernToastContainer';
+import { calculateMasterPacks } from './utils/packetEngine';
 import './styles.css';
 
 export default function App() {
@@ -15,8 +17,12 @@ export default function App() {
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [itemQuantities, setItemQuantities] = useState({});
   const [activeCategory, setActiveCategory] = useState('ALL');
+  const [dynamicCategories, setDynamicCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState('default');
   const [isOrderLayerOpen, setIsOrderLayerOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [invoiceData, setInvoiceData] = useState({});
 
   useEffect(() => {
     // Load locally cached products from Admin
@@ -39,8 +45,9 @@ export default function App() {
       };
     }
 
+    // Live sync products from Firestore
     const productsRef = collection(db, 'products');
-    const unsubscribe = onSnapshot(productsRef, (snapshot) => {
+    const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
       const fetched = snapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         ...docSnap.data()
@@ -52,8 +59,20 @@ export default function App() {
       console.warn('Firestore customer sync info:', error.message);
     });
 
+    // Live sync custom categories from Firestore
+    const categoriesRef = collection(db, 'categories');
+    const unsubscribeCategories = onSnapshot(categoriesRef, (snapshot) => {
+      const cats = snapshot.docs.map((d) => d.data().name).filter(Boolean);
+      if (cats.length > 0) {
+        setDynamicCategories(cats);
+      }
+    }, (error) => {
+      console.warn('Firestore categories sync info:', error.message);
+    });
+
     return () => {
-      unsubscribe();
+      unsubscribeProducts();
+      unsubscribeCategories();
       if (channel) channel.close();
     };
   }, []);
@@ -94,6 +113,7 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         selectedCount={selectedProductIds.length}
         onOpenOrderLayer={() => setIsOrderLayerOpen(true)}
+        onSelectCategory={setActiveCategory}
       />
 
       <ModernToastContainer />
@@ -103,7 +123,13 @@ export default function App() {
       <main className="main-catalog-container">
         <HeroBanner />
 
-        <CategoryTabs activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+        <CategoryTabs
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          dynamicCategories={dynamicCategories}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+        />
 
         <ProductGrid
           products={products}
@@ -111,6 +137,8 @@ export default function App() {
           onToggleSelect={handleToggleSelect}
           activeCategory={activeCategory}
           searchQuery={searchQuery}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
         />
       </main>
 
@@ -128,39 +156,83 @@ export default function App() {
         itemQuantities={itemQuantities}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}
+        onOpenInvoicePreview={(data) => {
+          setInvoiceData(data);
+          setIsInvoiceModalOpen(true);
+        }}
       />
 
+      {/* Modern Responsive Purchase Order Invoice Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        company={invoiceData.company}
+        name={invoiceData.name}
+        phone={invoiceData.phone}
+        gst={invoiceData.gst}
+        address={invoiceData.address}
+        selectedProductIds={selectedProductIds}
+        products={products}
+        itemQuantities={itemQuantities}
+        packInfo={calculateMasterPacks(selectedProductIds, products, itemQuantities)}
+      />
+
+      {/* Two-Tier Wholesale Footer from Reference Image */}
       <footer className="main-footer">
-        <div className="footer-container">
-          <div className="footer-brand">
-            <img
-              src="/public/assets/logo.jpg"
-              alt="Govindasamy & Co"
-              className="footer-logo"
-              onError={(e) => { e.target.src = 'https://via.placeholder.com/45?text=GS'; }}
-            />
-            <div>
-              <h4>GOVINDASAMY & CO</h4>
-              <p>Quality Mat & Textile Products Manufacturer & Wholesaler</p>
+        <div className="footer-top-tier">
+          <div className="footer-container">
+            {/* Brand block */}
+            <div className="footer-brand">
+              <img
+                src="/assets/logo.jpg"
+                alt="Govindasamy & Co"
+                className="footer-logo"
+                onError={(e) => { e.target.src = 'https://via.placeholder.com/52?text=GS'; }}
+              />
+              <div>
+                <h4>GOVINDASAMY & CO</h4>
+                <p>Quality Mat & Textile Products Manufacturer & Wholesaler</p>
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="footer-col footer-col-address">
+              <a href="https://maps.app.goo.gl/651k1dFnksLthHSq6" target="_blank" rel="noreferrer">
+                <i className="fa-solid fa-location-dot"></i>
+                <span>65, Kamaraj St, Erode - 638001<br />Tamil Nadu, India</span>
+              </a>
+            </div>
+
+            {/* Contacts */}
+            <div className="footer-col footer-col-contacts">
+              <p>
+                <i className="fa-solid fa-envelope"></i>
+                <span>sales@govindasamyco.com</span>
+              </p>
+              <p>
+                <i className="fa-solid fa-phone"></i>
+                <span>+91 98427 12345</span>
+              </p>
+            </div>
+
+            {/* WhatsApp Inquiry Pill */}
+            <div className="footer-action-col">
+              <a
+                href="https://wa.me/919842932756"
+                target="_blank"
+                rel="noreferrer"
+                className="btn-whatsapp-footer"
+              >
+                <i className="fa-brands fa-whatsapp"></i>
+                <span>WhatsApp Inquiry</span>
+              </a>
             </div>
           </div>
-          <div className="footer-contact">
-            <p>
-              <a href="https://maps.app.goo.gl/651k1dFnksLthHSq6" target="_blank" rel="noreferrer" style={{ color: '#fcd34d', textDecoration: 'none', fontWeight: 600 }}>
-                <i className="fa-solid fa-location-dot" style={{ color: 'var(--brand-gold)', marginRight: '0.4rem' }}></i>
-                65, Kamaraj St, NMS Compound, Erode Fort, Erode, Tamil Nadu 638001
-              </a>
-            </p>
-            <p><i className="fa-solid fa-envelope" style={{ marginRight: '0.4rem' }}></i> govindasamy.textitle@gmail.com</p>
-            <p style={{ marginTop: '0.4rem' }}>
-              <a href="https://wa.me/919842932756" target="_blank" rel="noreferrer" className="btn-whatsapp-header" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
-                <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.2rem' }}></i> WhatsApp Inquiry
-              </a>
-            </p>
-          </div>
         </div>
-        <div className="footer-copyright">
-          © 2026 Govindasamy & Co. All Rights Reserved. • Powered by React & Firebase Firestore Sync
+
+        {/* Bottom Dark Blue Copyright Strip */}
+        <div className="footer-bottom-strip">
+          <p>© 2026 Govindasamy & Co. All Rights Reserved. • Powered by React & Firebase Firestore Sync</p>
         </div>
       </footer>
     </div>

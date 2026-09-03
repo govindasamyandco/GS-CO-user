@@ -10,14 +10,25 @@ export default function TrustBar() {
           rel="noreferrer"
           className="trust-item location-link"
           title="Open Location in Google Maps"
-          style={{ textDecoration: 'none', color: 'var(--brand-navy)' }}
         >
           <i className="fa-solid fa-location-dot" style={{ color: 'var(--brand-gold)' }}></i>
-          <span><strong>Factory & Store:</strong> 65, Kamaraj St, NMS Compound, Erode Fort, Erode 638001</span>
+          <span>65, Kamaraj St, Erode - 638001, Tamil Nadu, India</span>
         </a>
-        <div className="trust-item"><i className="fa-solid fa-industry"></i> Factory Wholesale Rates</div>
-        <div className="trust-item"><i className="fa-solid fa-truck-fast"></i> Pan-India Lorry Transport</div>
-        <div className="trust-item"><i className="fa-solid fa-certificate"></i> Premium Cotton Weave</div>
+        <div className="trust-divider"></div>
+        <div className="trust-item">
+          <i className="fa-solid fa-industry" style={{ color: 'var(--brand-navy)' }}></i>
+          <span>Factory Wholesale Rates</span>
+        </div>
+        <div className="trust-divider"></div>
+        <div className="trust-item">
+          <i className="fa-solid fa-truck" style={{ color: 'var(--brand-navy)' }}></i>
+          <span>Pan-India Lorry Delivery</span>
+        </div>
+        <div className="trust-divider"></div>
+        <div className="trust-item">
+          <i className="fa-solid fa-leaf" style={{ color: 'var(--brand-gold)' }}></i>
+          <span>Premium Cotton Products</span>
+        </div>
       </div>
     </div>
   );

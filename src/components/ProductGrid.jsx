@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ProductCard from './ProductCard';
 
-export default function ProductGrid({ products, selectedProductIds, onToggleSelect, activeCategory, searchQuery }) {
-  const [sortOption, setSortOption] = useState('featured');
-
+export default function ProductGrid({
+  products,
+  selectedProductIds,
+  onToggleSelect,
+  activeCategory,
+  searchQuery,
+  sortOption = 'default',
+  setSortOption
+}) {
   let filtered = products.filter((p) => {
     const matchesCategory = activeCategory === 'ALL' || p.category === activeCategory;
     const matchesSearch =
@@ -24,43 +30,55 @@ export default function ProductGrid({ products, selectedProductIds, onToggleSele
       return a.baseRate - b.baseRate;
     } else if (sortOption === 'price-high') {
       return b.baseRate - a.baseRate;
+    } else if (sortOption === 'stock') {
+      return (b.stockQty || 0) - (a.stockQty || 0);
     }
     return 0;
   });
 
   return (
-    <>
-      <div className="catalog-header">
-        <div>
-          <h2>{activeCategory === 'ALL' ? 'All Mat Products' : activeCategory}</h2>
-          <p>Click "Select Item" on cards below to select products for your wholesale order.</p>
-        </div>
-        <div className="sort-box">
-          <label><i className="fa-solid fa-arrow-down-short-wide"></i> Sort By:</label>
-          <select className="filter-select" value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
-            <option value="featured">Featured Collection</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-          </select>
-        </div>
+    <section className="catalog-products-section">
+      {/* Straight-line Section Title & Modern Sort By */}
+      <div className="catalog-section-header-row">
+        <h2 className="catalog-section-title">
+          {activeCategory === 'ALL' ? 'All Mat Products' : activeCategory}
+        </h2>
+
+        {setSortOption && (
+          <div className="straight-line-sort-box">
+            <label htmlFor="catalog-sort-select" className="sort-label">
+              <i className="fa-solid fa-arrow-down-short-wide"></i> Sort By:
+            </label>
+            <select
+              id="catalog-sort-select"
+              className="sort-dropdown-modern"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+            >
+              <option value="default">Default Order</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="stock">Stock Quantity</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Customer Notice Banner for Seasonal and Stock Pricing */}
-      <div className="wholesale-pricing-alert-banner">
-        <div className="banner-icon">
-          <i className="fa-solid fa-circle-info"></i>
-        </div>
-        <div className="banner-text">
-          <strong>Wholesale Pricing Notice:</strong> Quoted rates are factory standard wholesale rates. Price may differ based on the season item or the stock quantity at dispatch.
-        </div>
+      {/* Light Blue Wholesale Pricing Notice Banner from Reference */}
+      <div className="pricing-notice-box">
+        <i className="fa-solid fa-circle-info"></i>
+        <span>
+          <strong>Wholesale Pricing Notice:</strong> Quoted rates are factory standard wholesale rates. Final rates may vary based on order quantity, destination & delivery terms.
+        </span>
       </div>
 
-      <div className="product-grid">
+      {/* Product Cards Grid */}
+      <div className="product-cards-grid">
         {filtered.length === 0 ? (
-          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem 1rem', color: '#64748b' }}>
-            <i className="fa-solid fa-rug" style={{ fontSize: '3.5rem', color: 'var(--brand-emerald)', marginBottom: '1rem' }}></i>
-            <h3 style={{ color: 'var(--brand-navy)', marginBottom: '0.5rem' }}>No Mat Products Found</h3>
-            <p>Try searching for a different keyword or category.</p>
+          <div className="no-products-box">
+            <i className="fa-solid fa-layer-group"></i>
+            <h3>No Mat Products Found</h3>
+            <p>Try searching for a different keyword or category tab.</p>
           </div>
         ) : (
           filtered.map((product) => (
@@ -73,6 +91,6 @@ export default function ProductGrid({ products, selectedProductIds, onToggleSele
           ))
         )}
       </div>
-    </>
+    </section>
   );
 }

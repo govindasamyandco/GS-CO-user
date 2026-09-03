@@ -62,7 +62,7 @@ const initialSeedProducts = [
         compressibility: 0.85,
         minOrderNotice: 'Available for individual piece purchase',
         description: 'Economical multi-color entryway mat suitable for home, office, and shop entrances.',
-        imageUrl: 'public/assets/logo.jpg'
+        imageUrl: '/assets/logo.jpg'
     },
     {
         title: '6ft Anti-Slip Runner Long Mat',
@@ -74,7 +74,7 @@ const initialSeedProducts = [
         compressibility: 0.85,
         minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
         description: 'Extra long hallway and kitchen runner mats bundled in 10-piece sets.',
-        imageUrl: 'public/assets/logo.jpg'
+        imageUrl: '/assets/logo.jpg'
     }
 ];
 
@@ -226,7 +226,7 @@ function renderCatalog() {
             </div>
 
             <div class="card-img-wrapper">
-                <img src="${p.imageUrl}" alt="${p.title}" class="card-img" onerror="this.src='public/assets/logo.jpg'">
+                <img src="${p.imageUrl}" alt="${p.title}" class="card-img" onerror="this.src='/assets/logo.jpg'">
                 <span class="category-tag">${p.category}</span>
                 ${isBulkUnit ? `
                     <span class="bundle-badge">
@@ -528,7 +528,7 @@ function generatePdfInvoice() {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text("Quality Mat & Textile Products Manufacturer & Wholesaler", 15, 25);
-        doc.text("Email: govindasamy.textitle@gmail.com | Phone: +91 98429 32756", 15, 30);
+        doc.text("Email: govindasamy.textile@gmail.com | Phone: +91 98429 32756", 15, 30);
 
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");

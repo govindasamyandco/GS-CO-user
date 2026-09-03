@@ -15,8 +15,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// Connect to local Firestore emulator in local development
-if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+// Connect to local Firestore emulator only when explicitly enabled in local development
+if (typeof window !== "undefined" && import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATOR === "true") {
   try {
     connectFirestoreEmulator(db, "127.0.0.1", 8080);
   } catch (e) {

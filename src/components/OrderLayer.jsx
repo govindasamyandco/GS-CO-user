@@ -3,6 +3,7 @@ import { db, collection, addDoc, serverTimestamp } from '../firebase';
 import { calculateMasterPacks } from '../utils/packetEngine';
 import { generatePdfInvoice } from '../utils/pdfGenerator';
 import { toast } from '../utils/toast';
+import { sanitizeInput, orderRateLimiter } from '../utils/security';
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919842932756';
 
@@ -13,19 +14,115 @@ export default function OrderLayer({
   products,
   itemQuantities,
   onUpdateQty,
-  onRemoveItem
+  onRemoveItem,
+  onOpenInvoicePreview
 }) {
   const [company, setCompany] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [gst, setGst] = useState('');
   const [address, setAddress] = useState('');
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
 
+  // Field validation states
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Real-time validation rule function
+  const validateField = (field, val) => {
+    const value = (val ?? '').trim();
+    switch (field) {
+      case 'company':
+        if (!value) return 'Company / Shop name is required';
+        if (value.length < 3) return 'Company name must be at least 3 characters';
+        return '';
+
+      case 'name':
+        if (!value) return 'Contact person name is required';
+        if (value.length < 2) return 'Contact name must be at least 2 characters';
+        if (!/^[a-zA-Z\s.]+$/.test(value)) return 'Name should only contain letters and spaces';
+        return '';
+
+      case 'phone': {
+        if (!value) return 'WhatsApp / Phone number is required';
+        const digits = value.replace(/\D/g, '');
+        const normalized = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+        if (normalized.length !== 10) return 'Enter a valid 10-digit mobile number';
+        if (!/^[6-9]\d{9}$/.test(normalized)) return 'Mobile number must start with 6, 7, 8, or 9';
+        return '';
+      }
+
+      case 'gst':
+        if (value) {
+          const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i;
+          if (!gstRegex.test(value)) {
+            return 'Invalid 15-digit GSTIN (e.g. 33AAAAA0000A1Z5) or leave blank';
+          }
+        }
+        return '';
+
+      case 'address':
+        if (!value) return 'Delivery address & transport city is required';
+        if (value.length < 8) return 'Please provide full address & city (min 8 characters)';
+        return '';
+
+      default:
+        return '';
+    }
+  };
+
+  const handleFieldChange = (field, val) => {
+    if (field === 'company') setCompany(val);
+    if (field === 'name') setName(val);
+    if (field === 'phone') setPhone(val);
+    if (field === 'gst') setGst(val.toUpperCase());
+    if (field === 'address') setAddress(val);
+
+    if (touched[field]) {
+      const err = validateField(field, val);
+      setErrors((prev) => ({ ...prev, [field]: err }));
+    }
+  };
+
+  const handleFieldBlur = (field, val) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const err = validateField(field, val);
+    setErrors((prev) => ({ ...prev, [field]: err }));
+  };
+
+  const validateAllDetails = () => {
+    const newErrors = {
+      company: validateField('company', company),
+      name: validateField('name', name),
+      phone: validateField('phone', phone),
+      gst: validateField('gst', gst),
+      address: validateField('address', address)
+    };
+
+    const hasErrors = Object.values(newErrors).some((e) => Boolean(e));
+    setErrors(newErrors);
+    setTouched({
+      company: true,
+      name: true,
+      phone: true,
+      gst: true,
+      address: true
+    });
+
+    if (hasErrors) {
+      toast.error('Please fill in and correct all required business details.', 'Validation Required');
+      return false;
+    }
+    return true;
+  };
+
+  // Calculate packet bundling info
   const packInfo = calculateMasterPacks(selectedProductIds, products, itemQuantities);
 
-  let grandTotal = 0;
+  // Calculate grand totals
   let totalUnits = 0;
-
+  let grandTotal = 0;
   selectedProductIds.forEach((id) => {
     const prod = products.find((p) => p.id === id);
     const qty = itemQuantities[id] || 1;
@@ -36,27 +133,33 @@ export default function OrderLayer({
   });
 
   const handleWhatsAppSubmit = async () => {
+    // Bot Honeypot Defense
+    if (honeypot) {
+      console.warn('Bot submission blocked via honeypot.');
+      return;
+    }
+
+    // Client-Side Submission Rate Limiting
+    const rateCheck = orderRateLimiter.canProceed();
+    if (!rateCheck.allowed) {
+      toast.warning(`Please wait ${rateCheck.remainingSecs} seconds before submitting again.`, 'Request Throttled');
+      return;
+    }
+
     if (selectedProductIds.length === 0) {
       toast.warning('Please select at least 1 mat item before sending order.', 'Order Form Empty');
       return;
     }
 
-    const cleanCompany = company.trim();
-    const cleanName = name.trim();
-    const cleanPhone = phone.trim().replace(/\s+/g, '');
-    const cleanAddress = address.trim();
-    const cleanGst = gst.trim();
-
-    if (!cleanCompany || !cleanName || !cleanPhone || !cleanAddress) {
-      toast.warning('Please fill in your Company Name, Contact Name, Phone, and Delivery Address.', 'Required Information');
+    if (!validateAllDetails()) {
       return;
     }
 
-    const numericPhone = cleanPhone.replace(/[^0-9]/g, '');
-    if (numericPhone.length < 10) {
-      toast.error('Please enter a valid phone number with at least 10 digits.', 'Invalid Phone');
-      return;
-    }
+    const cleanCompany = sanitizeInput(company);
+    const cleanName = sanitizeInput(name);
+    const cleanPhone = sanitizeInput(phone).replace(/\s+/g, '');
+    const cleanAddress = sanitizeInput(address);
+    const cleanGst = sanitizeInput(gst);
 
     // Safely map and filter valid products
     const validItems = selectedProductIds
@@ -79,93 +182,97 @@ export default function OrderLayer({
 
     // Save order in Firestore with strict schema compliance & broadcast to Admin Portal
     try {
-      await addDoc(collection(db, 'orders'), {
+      const orderPayload = {
         companyName: cleanCompany,
         contactPerson: cleanName,
         phone: cleanPhone,
-        gstNo: cleanGst || '',
-        address: cleanAddress,
-        estBales: packInfo.estPacks,
-        status: 'PENDING_CONFIRMATION',
-        createdAt: serverTimestamp(),
-        items: validItems
-      });
-    } catch (err) {
-      console.warn('Firestore order record warning:', err);
-    }
+        gstNumber: cleanGst || 'N/A',
+        deliveryAddress: cleanAddress,
+        items: validItems,
+        totalUnits: Number(totalUnits),
+        estBales: Number(packInfo.estPacks) || 1,
+        grandTotal: Number(grandTotal),
+        status: 'PENDING',
+        createdAt: serverTimestamp()
+      };
 
-    if (typeof window !== 'undefined' && window.BroadcastChannel) {
-      try {
+      await addDoc(collection(db, 'orders'), orderPayload);
+
+      if (typeof window !== 'undefined' && window.BroadcastChannel) {
         const channel = new BroadcastChannel('gsco_realtime_channel');
         channel.postMessage({
           type: 'ORDER_PLACED',
-          order: {
-            companyName: cleanCompany,
-            contactPerson: cleanName,
-            phone: cleanPhone,
-            estBales: packInfo.estPacks,
-            items: validItems
-          }
+          order: orderPayload
         });
         channel.close();
-      } catch (bcErr) {
-        console.warn('BroadcastChannel info:', bcErr);
       }
+
+      toast.success('Your wholesale order inquiry was logged! Opening WhatsApp...', 'Order Registered');
+    } catch (err) {
+      console.warn('Firestore direct write bypassed or offline. Proceeding to WhatsApp:', err.message);
     }
 
-    let message = `*NEW MAT ORDER - GOVINDASAMY & CO*\n`;
+    // Build WhatsApp Message
+    let message = `*NEW WHOLESALE ORDER INQUIRY*\n`;
+    message += `*GOVINDASAMY & CO - WHOLESALE MAT CATALOG*\n`;
     message += `====================================\n`;
-    message += `🏢 *Company Name*: ${company}\n`;
-    message += `👤 *Contact Person*: ${name}\n`;
-    message += `📞 *Phone/WhatsApp*: ${phone}\n`;
-    if (gst) message += `🆔 *GST No*: ${gst}\n`;
-    message += `📍 *Delivery Address*: ${address}\n`;
+    message += `🏢 *Company / Shop*: ${cleanCompany}\n`;
+    message += `👤 *Contact Person*: ${cleanName}\n`;
+    message += `📞 *Phone / WhatsApp*: ${cleanPhone}\n`;
+    if (cleanGst) message += `🏛️ *GST Number*: ${cleanGst}\n`;
+    message += `📍 *Delivery Address & City*: ${cleanAddress}\n`;
     message += `====================================\n`;
-    message += `*ORDERED MAT ITEMS*:\n\n`;
+    message += `*ORDERED MAT ITEMS*:\n`;
 
-    let index = 1;
-    selectedProductIds.forEach((id) => {
-      const prod = products.find((p) => p.id === id);
-      const qty = itemQuantities[id] || 1;
-      if (prod) {
-        const subtotal = prod.baseRate * qty;
-        message += `${index}. *${prod.title}*\n`;
-        message += `   - Category: ${prod.category}\n`;
-        message += `   - Quantity: *${qty} ${prod.unit.replace('per ', '')}(s)*\n`;
-        if (prod.bundlePieces > 0) {
-          message += `   - Total Pcs: (${qty * prod.bundlePieces} pieces)\n`;
-        }
-        message += `   - Rate: Rs. ${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit.replace('per ', '')}\n`;
-        message += `   - Subtotal: *Rs. ${subtotal.toLocaleString('en-IN')}*\n\n`;
-        index++;
-      }
+    validItems.forEach((item, index) => {
+      const subtotal = item.qty * item.unitRate;
+      message += `${index + 1}. *${item.title}*\n`;
+      message += `   Quantity: ${item.qty} Bundle(s) | Rate: Rs. ${item.unitRate.toLocaleString('en-IN')} | Total: Rs. ${subtotal.toLocaleString('en-IN')}\n`;
     });
 
     message += `====================================\n`;
-    message += `📦 *ESTIMATED MASTER BALES*: *${packInfo.estPacks} Bales/Packs*\n`;
+    message += `📦 *Total Mat Quantity*: ${totalUnits} Bundle(s)\n`;
+    message += `📦 *Est. Master Bales / Packs*: *${packInfo.estPacks} Master ${packInfo.estPacks === 1 ? 'Bale' : 'Bales'}*\n`;
     message += `💰 *TOTAL ESTIMATED RATE*: *Rs. ${grandTotal.toLocaleString('en-IN')}*\n`;
+    message += `🏷️ *Wholesale Notice*: Price may differ based on the season item or the stock quantity at dispatch.\n`;
     message += `====================================\n`;
     message += `Please confirm availability & dispatch transport details. Thank you!`;
 
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (selectedProductIds.length === 0) {
       toast.warning('Please select at least 1 mat item before downloading PDF invoice.', 'Cart Empty');
       return;
     }
-    generatePdfInvoice({
-      company,
-      name,
-      phone,
-      gst,
-      address,
-      selectedProductIds,
-      products,
-      itemQuantities,
-      packInfo
-    });
+
+    if (!validateAllDetails()) {
+      return;
+    }
+
+    if (isDownloadingPdf) return;
+    try {
+      setIsDownloadingPdf(true);
+      toast.info('Generating high-resolution A4 Invoice PDF with images...', 'Please wait');
+      await generatePdfInvoice({
+        company,
+        name,
+        phone,
+        gst,
+        address,
+        selectedProductIds,
+        products,
+        itemQuantities,
+        packInfo
+      });
+      toast.success('A4 PDF Invoice downloaded successfully!', 'Invoice Saved');
+    } catch (err) {
+      console.error('PDF error:', err);
+      toast.error('Failed to generate PDF. Please try again.', 'Error');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   return (
@@ -174,13 +281,11 @@ export default function OrderLayer({
 
       <aside className={`separate-order-layer ${isOpen ? 'layer-open' : ''}`}>
         <div className="layer-content-card">
-          <div className="layer-header">
-            <div className="layer-title-group">
-              <i className="fa-solid fa-file-invoice-dollar"></i>
-              <div>
-                <h3>Wholesale Purchase Order</h3>
-                <span className="layer-subtitle">Review items, fill company details & export order</span>
-              </div>
+          {/* Header */}
+          <div className="layer-header-bar">
+            <div>
+              <h3>Wholesale Purchase Order</h3>
+              <p>Review items, fill company details & export order</p>
             </div>
             <button type="button" className="btn-close-layer" onClick={onClose} title="Close Order Form">
               <i className="fa-solid fa-xmark"></i>
@@ -189,45 +294,79 @@ export default function OrderLayer({
 
           <div className="layer-body">
             {/* Section 1: Selected Items & Quantities */}
-            <div className="section-block">
-              <div className="section-title">
-                <i className="fa-solid fa-list-check"></i>
+            <div className="order-form-section">
+              <div className="form-section-title">
+                <i className="fa-solid fa-clipboard-check"></i>
                 <h4>1. Selected Items & Quantities</h4>
               </div>
-              <div className="selected-items-container">
+
+              <div className="selected-items-list">
                 {selectedProductIds.length === 0 ? (
-                  <div className="empty-selection-notice">
-                    <i className="fa-solid fa-hand-pointer"></i>
-                    <p>No items selected yet</p>
-                    <span>Click <strong>"Select Item"</strong> on any mat card to build your wholesale order!</span>
+                  <div className="empty-cart-notice">
+                    <i className="fa-solid fa-cart-arrow-down"></i>
+                    <h5>No Items Selected Yet</h5>
+                    <p>Click <strong>"+ Select Item"</strong> on any mat card to build your order.</p>
                   </div>
                 ) : (
                   selectedProductIds.map((id) => {
                     const prod = products.find((p) => p.id === id);
                     if (!prod) return null;
                     const qty = itemQuantities[id] || 1;
+                    const subtotal = prod.baseRate * qty;
 
                     return (
-                      <div key={id} className="side-item-row">
-                        <div className="side-item-info">
-                          <div className="side-item-title">{prod.title}</div>
-                          <div className="side-item-rate">
-                            Rs. {prod.baseRate.toLocaleString('en-IN')} / {prod.unit.replace('per ', '')}
+                      <div key={id} className="order-item-card">
+                        <div className="order-item-main">
+                          {prod.imageUrl && !prod.imageUrl.includes('logo.jpg') ? (
+                            <img
+                              src={prod.imageUrl}
+                              alt={prod.title}
+                              className="layer-item-thumb"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className="layer-item-thumb-box">
+                              <i className="fa-solid fa-rug"></i>
+                            </div>
+                          )}
+                          <div className="order-item-meta">
+                            <h5 className="order-item-name">{prod.title}</h5>
+                            <span className="order-item-rate">
+                              ₹{prod.baseRate.toLocaleString('en-IN')} / {prod.unit ? prod.unit.replace('per ', '') : 'Bundle'}
+                            </span>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <input
-                            type="number"
-                            className="side-qty-input"
-                            value={qty}
-                            min="1"
-                            onChange={(e) => onUpdateQty(id, parseInt(e.target.value) || 1)}
-                          />
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                            {prod.unit.replace('per ', '')}(s)
-                          </span>
-                          <button type="button" className="btn-remove-side" onClick={() => onRemoveItem(id)} title="Remove item">
-                            <i className="fa-solid fa-xmark"></i>
+
+                        <div className="order-item-stepper-row">
+                          <div className="qty-stepper">
+                            <button
+                              type="button"
+                              className="qty-btn"
+                              onClick={() => onUpdateQty(id, Math.max(1, qty - 1))}
+                              aria-label="Decrease quantity"
+                            >
+                              <i className="fa-solid fa-minus"></i>
+                            </button>
+                            <span className="qty-val">{qty}</span>
+                            <button
+                              type="button"
+                              className="qty-btn"
+                              onClick={() => onUpdateQty(id, qty + 1)}
+                              aria-label="Increase quantity"
+                            >
+                              <i className="fa-solid fa-plus"></i>
+                            </button>
+                          </div>
+
+                          <span className="order-item-subtotal">₹{subtotal.toLocaleString('en-IN')}</span>
+
+                          <button
+                            type="button"
+                            className="btn-delete-item"
+                            onClick={() => onRemoveItem(id)}
+                            title="Remove product"
+                          >
+                            <i className="fa-solid fa-trash"></i>
                           </button>
                         </div>
                       </div>
@@ -238,107 +377,223 @@ export default function OrderLayer({
             </div>
 
             {/* Section 2: Business & Contact Form */}
-            <div className="section-block">
-              <div className="section-title">
-                <i className="fa-solid fa-building-columns"></i>
-                <h4>2. Business & Contact Information</h4>
+            <div className="order-form-section">
+              <div className="form-section-title">
+                <i className="fa-solid fa-building"></i>
+                <h4>2. Business & Contact Details</h4>
               </div>
 
-              <div className="form-group">
-                <label><i className="fa-solid fa-briefcase"></i> Company / Shop Name *</label>
+              {/* Anti-Bot Honeypot field (hidden from legitimate users) */}
+              <input
+                type="text"
+                name="hp_order_security"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                style={{ display: 'none', position: 'absolute', left: '-9999px', opacity: 0 }}
+                tabIndex="-1"
+                autoComplete="off"
+              />
+
+              {/* 1. Company Name */}
+              <div className="form-group-custom">
+                <div className="form-label-row">
+                  <label htmlFor="order-company-input">
+                    <i className="fa-solid fa-store"></i> Company / Shop Name *
+                  </label>
+                  {touched.company && !errors.company && company.trim() && (
+                    <span className="field-valid-badge"><i className="fa-solid fa-check"></i> Valid</span>
+                  )}
+                </div>
                 <input
+                  id="order-company-input"
                   type="text"
-                  className="form-control"
+                  className={`form-control-custom ${touched.company && errors.company ? 'field-input-error' : touched.company && company.trim() && !errors.company ? 'field-input-valid' : ''}`}
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={(e) => handleFieldChange('company', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('company', e.target.value)}
                   placeholder="e.g. Sri Lakshmi Textiles & Mat Stores"
                   required
                 />
+                {touched.company && errors.company && (
+                  <span className="field-error-text">
+                    <i className="fa-solid fa-circle-exclamation"></i> {errors.company}
+                  </span>
+                )}
               </div>
 
-              <div className="form-group">
-                <label><i className="fa-solid fa-user-tie"></i> Contact Person Name *</label>
+              {/* 2. Contact Person */}
+              <div className="form-group-custom">
+                <div className="form-label-row">
+                  <label htmlFor="order-name-input">
+                    <i className="fa-solid fa-user"></i> Contact Person Name *
+                  </label>
+                  {touched.name && !errors.name && name.trim() && (
+                    <span className="field-valid-badge"><i className="fa-solid fa-check"></i> Valid</span>
+                  )}
+                </div>
                 <input
+                  id="order-name-input"
                   type="text"
-                  className="form-control"
+                  className={`form-control-custom ${touched.name && errors.name ? 'field-input-error' : touched.name && name.trim() && !errors.name ? 'field-input-valid' : ''}`}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('name', e.target.value)}
                   placeholder="e.g. Mr. K. Ramesh"
                   required
                 />
+                {touched.name && errors.name && (
+                  <span className="field-error-text">
+                    <i className="fa-solid fa-circle-exclamation"></i> {errors.name}
+                  </span>
+                )}
               </div>
 
-              <div className="form-group">
-                <label><i className="fa-solid fa-phone"></i> WhatsApp / Phone Number *</label>
+              {/* 3. Phone / WhatsApp */}
+              <div className="form-group-custom">
+                <div className="form-label-row">
+                  <label htmlFor="order-phone-input">
+                    <i className="fa-solid fa-phone"></i> WhatsApp / Phone Number *
+                  </label>
+                  {touched.phone && !errors.phone && phone.trim() && (
+                    <span className="field-valid-badge"><i className="fa-solid fa-check"></i> Valid</span>
+                  )}
+                </div>
                 <input
+                  id="order-phone-input"
                   type="tel"
-                  className="form-control"
+                  className={`form-control-custom ${touched.phone && errors.phone ? 'field-input-error' : touched.phone && phone.trim() && !errors.phone ? 'field-input-valid' : ''}`}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => handleFieldChange('phone', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('phone', e.target.value)}
                   placeholder="e.g. 9842932756"
                   required
                 />
+                {touched.phone && errors.phone && (
+                  <span className="field-error-text">
+                    <i className="fa-solid fa-circle-exclamation"></i> {errors.phone}
+                  </span>
+                )}
               </div>
 
-              <div className="form-group">
-                <label><i className="fa-solid fa-id-card"></i> GST Number (Optional)</label>
+              {/* 4. GST Number (Optional) */}
+              <div className="form-group-custom">
+                <div className="form-label-row">
+                  <label htmlFor="order-gst-input">
+                    <i className="fa-solid fa-receipt"></i> GST Number (Optional)
+                  </label>
+                  {touched.gst && !errors.gst && gst.trim() && (
+                    <span className="field-valid-badge"><i className="fa-solid fa-check"></i> Valid GST</span>
+                  )}
+                </div>
                 <input
+                  id="order-gst-input"
                   type="text"
-                  className="form-control"
+                  className={`form-control-custom ${touched.gst && errors.gst ? 'field-input-error' : touched.gst && gst.trim() && !errors.gst ? 'field-input-valid' : ''}`}
                   value={gst}
-                  onChange={(e) => setGst(e.target.value)}
+                  onChange={(e) => handleFieldChange('gst', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('gst', e.target.value)}
                   placeholder="e.g. 33AAAAA0000A1Z5"
                 />
+                {touched.gst && errors.gst && (
+                  <span className="field-error-text">
+                    <i className="fa-solid fa-circle-exclamation"></i> {errors.gst}
+                  </span>
+                )}
               </div>
 
-              <div className="form-group">
-                <label><i className="fa-solid fa-location-dot"></i> Delivery Address & Lorry Transport City *</label>
+              {/* 5. Delivery Address */}
+              <div className="form-group-custom">
+                <div className="form-label-row">
+                  <label htmlFor="order-address-input">
+                    <i className="fa-solid fa-location-dot"></i> Delivery Address & Lorry Transport City *
+                  </label>
+                  {touched.address && !errors.address && address.trim() && (
+                    <span className="field-valid-badge"><i className="fa-solid fa-check"></i> Valid</span>
+                  )}
+                </div>
                 <textarea
-                  className="form-control"
+                  id="order-address-input"
+                  className={`form-control-custom ${touched.address && errors.address ? 'field-input-error' : touched.address && address.trim() && !errors.address ? 'field-input-valid' : ''}`}
                   rows="2"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => handleFieldChange('address', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('address', e.target.value)}
                   placeholder="Full street address, city, landmark & preferred lorry transport service..."
                   required
                 ></textarea>
+                {touched.address && errors.address && (
+                  <span className="field-error-text">
+                    <i className="fa-solid fa-circle-exclamation"></i> {errors.address}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Section 3: Summary & Packet Calc */}
-            <div className="side-summary-card">
-              <div className="summary-line">
+            {/* Section 3: Summary & Master Bales Calculation */}
+            <div className="order-calc-card">
+              <div className="calc-row">
                 <span>Selected Products:</span>
                 <strong>{selectedProductIds.length} Items</strong>
               </div>
-              <div className="summary-line">
+              <div className="calc-row">
                 <span>Total Ordered Quantity:</span>
                 <strong>{totalUnits} Units</strong>
               </div>
-
-              <div className="summary-line packet-calc-line">
-                <span><i className="fa-solid fa-boxes-packing"></i> Est. Master Bales / Packs:</span>
-                <strong className="packet-val">{packInfo.estPacks} Master {packInfo.estPacks === 1 ? 'Bale' : 'Bales'}</strong>
+              <div className="calc-row packet-calc-row">
+                <span><i className="fa-solid fa-boxes-packing"></i> Est. Master Bales:</span>
+                <strong>{packInfo.estPacks} Master {packInfo.estPacks === 1 ? 'Bale' : 'Bales'}</strong>
               </div>
-
-              <div className="summary-line grand-total-line">
-                <span>Total Estimated Amount:</span>
-                <strong className="grand-total">Rs. {grandTotal.toLocaleString('en-IN')}</strong>
+              <div className="calc-row calc-row-total">
+                <span>Total Estimated Rate:</span>
+                <strong className="calc-grand-total">₹{grandTotal.toLocaleString('en-IN')}</strong>
               </div>
             </div>
 
-            {/* Seasonal & Stock Pricing Disclaimer */}
+            {/* Seasonal Pricing Disclaimer */}
             <div className="order-pricing-disclaimer">
               <i className="fa-solid fa-tags"></i>
-              <span><strong>Wholesale Note:</strong> Price may differ based on the season item or the stock quantity at dispatch. Final confirmation will be provided with lorry dispatch invoice.</span>
+              <span>
+                <strong>Wholesale Note:</strong> Price may differ based on the season item or the stock quantity at dispatch. Final confirmation will be provided with lorry dispatch invoice.
+              </span>
             </div>
 
             {/* Section 4: Action Buttons */}
-            <div className="side-action-buttons">
-              <button type="button" className="btn btn-whatsapp-action" onClick={handleWhatsAppSubmit}>
-                <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.4rem' }}></i> Send Order via WhatsApp
+            <div className="layer-action-buttons">
+              <button
+                type="button"
+                className="btn-preview-invoice"
+                onClick={() => {
+                  if (selectedProductIds.length === 0) {
+                    toast.warning('Please select at least 1 mat product to view invoice.', 'Cart Empty');
+                    return;
+                  }
+                  if (!validateAllDetails()) {
+                    return;
+                  }
+                  if (onOpenInvoicePreview) {
+                    onOpenInvoicePreview({ company, name, phone, gst, address });
+                  }
+                }}
+              >
+                <i className="fa-solid fa-file-invoice"></i>
+                <span>View / Preview Order Invoice</span>
               </button>
-              <button type="button" className="btn btn-pdf-action" onClick={handleDownloadPdf}>
-                <i className="fa-solid fa-file-pdf"></i> Download PDF Order Invoice
+              <button
+                type="button"
+                className="btn-whatsapp-submit"
+                onClick={handleWhatsAppSubmit}
+              >
+                <i className="fa-brands fa-whatsapp"></i>
+                <span>Send Order via WhatsApp</span>
+              </button>
+              <button
+                type="button"
+                className="btn-pdf-download"
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+              >
+                <i className={`fa-solid ${isDownloadingPdf ? 'fa-spinner fa-spin' : 'fa-file-pdf'}`}></i>
+                <span>{isDownloadingPdf ? 'Generating A4 PDF...' : 'Download PDF Order Invoice'}</span>
               </button>
             </div>
           </div>
