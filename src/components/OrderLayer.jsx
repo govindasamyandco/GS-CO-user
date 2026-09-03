@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { db, collection, addDoc, serverTimestamp } from '../firebase';
 import { calculateMasterPacks } from '../utils/packetEngine';
 import { generatePdfInvoice } from '../utils/pdfGenerator';
+import { toast } from '../utils/toast';
 
-const WHATSAPP_NUMBER = '919842932756';
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919842932756';
 
 export default function OrderLayer({
   isOpen,
@@ -36,37 +37,80 @@ export default function OrderLayer({
 
   const handleWhatsAppSubmit = async () => {
     if (selectedProductIds.length === 0) {
-      alert('Please select at least 1 mat item before sending order.');
-      return;
-    }
-    if (!company || !name || !phone || !address) {
-      alert('Please fill in your Company Name, Contact Name, Phone, and Delivery Address.');
+      toast.warning('Please select at least 1 mat item before sending order.', 'Order Form Empty');
       return;
     }
 
-    // Save order in Firestore
+    const cleanCompany = company.trim();
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim().replace(/\s+/g, '');
+    const cleanAddress = address.trim();
+    const cleanGst = gst.trim();
+
+    if (!cleanCompany || !cleanName || !cleanPhone || !cleanAddress) {
+      toast.warning('Please fill in your Company Name, Contact Name, Phone, and Delivery Address.', 'Required Information');
+      return;
+    }
+
+    const numericPhone = cleanPhone.replace(/[^0-9]/g, '');
+    if (numericPhone.length < 10) {
+      toast.error('Please enter a valid phone number with at least 10 digits.', 'Invalid Phone');
+      return;
+    }
+
+    // Safely map and filter valid products
+    const validItems = selectedProductIds
+      .map((id) => {
+        const prod = products.find((p) => p.id === id);
+        if (!prod) return null;
+        return {
+          title: prod.title || 'Mat Product',
+          category: prod.category || 'General',
+          qty: Number(itemQuantities[id]) || 1,
+          unitRate: Number(prod.baseRate) || 0
+        };
+      })
+      .filter(Boolean);
+
+    if (validItems.length === 0) {
+      toast.error('Selected products are no longer available in the catalog. Please reselect items.', 'Item Unavailable');
+      return;
+    }
+
+    // Save order in Firestore with strict schema compliance & broadcast to Admin Portal
     try {
       await addDoc(collection(db, 'orders'), {
-        companyName: company,
-        contactPerson: name,
-        phone,
-        gstNo: gst,
-        address,
+        companyName: cleanCompany,
+        contactPerson: cleanName,
+        phone: cleanPhone,
+        gstNo: cleanGst || '',
+        address: cleanAddress,
         estBales: packInfo.estPacks,
         status: 'PENDING_CONFIRMATION',
         createdAt: serverTimestamp(),
-        items: selectedProductIds.map((id) => {
-          const prod = products.find((p) => p.id === id);
-          return {
-            title: prod.title,
-            category: prod.category,
-            qty: itemQuantities[id] || 1,
-            unitRate: prod.baseRate
-          };
-        })
+        items: validItems
       });
     } catch (err) {
       console.warn('Firestore order record warning:', err);
+    }
+
+    if (typeof window !== 'undefined' && window.BroadcastChannel) {
+      try {
+        const channel = new BroadcastChannel('gsco_realtime_channel');
+        channel.postMessage({
+          type: 'ORDER_PLACED',
+          order: {
+            companyName: cleanCompany,
+            contactPerson: cleanName,
+            phone: cleanPhone,
+            estBales: packInfo.estPacks,
+            items: validItems
+          }
+        });
+        channel.close();
+      } catch (bcErr) {
+        console.warn('BroadcastChannel info:', bcErr);
+      }
     }
 
     let message = `*NEW MAT ORDER - GOVINDASAMY & CO*\n`;
@@ -108,7 +152,7 @@ export default function OrderLayer({
 
   const handleDownloadPdf = () => {
     if (selectedProductIds.length === 0) {
-      alert('Please select at least 1 mat item before downloading PDF invoice.');
+      toast.warning('Please select at least 1 mat item before downloading PDF invoice.', 'Cart Empty');
       return;
     }
     generatePdfInvoice({
@@ -280,6 +324,12 @@ export default function OrderLayer({
                 <span>Total Estimated Amount:</span>
                 <strong className="grand-total">Rs. {grandTotal.toLocaleString('en-IN')}</strong>
               </div>
+            </div>
+
+            {/* Seasonal & Stock Pricing Disclaimer */}
+            <div className="order-pricing-disclaimer">
+              <i className="fa-solid fa-tags"></i>
+              <span><strong>Wholesale Note:</strong> Price may differ based on the season item or the stock quantity at dispatch. Final confirmation will be provided with lorry dispatch invoice.</span>
             </div>
 
             {/* Section 4: Action Buttons */}

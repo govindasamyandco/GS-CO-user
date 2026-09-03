@@ -422,15 +422,18 @@ async function submitWhatsAppOrder() {
             estBales: packInfo.estPacks,
             status: 'PENDING_CONFIRMATION',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            items: Array.from(selectedProductIds).map(id => {
-                const prod = products.find(p => p.id === id);
-                return {
-                    title: prod.title,
-                    category: prod.category,
-                    qty: itemQuantities[id] || 1,
-                    unitRate: prod.baseRate
-                };
-            })
+            items: Array.from(selectedProductIds)
+                .map(id => {
+                    const prod = products.find(p => p.id === id);
+                    if (!prod) return null;
+                    return {
+                        title: prod.title || "Mat Product",
+                        category: prod.category || "General",
+                        qty: itemQuantities[id] || 1,
+                        unitRate: prod.baseRate || 0
+                    };
+                })
+                .filter(Boolean)
         };
 
         await db.collection("orders").add(orderData);

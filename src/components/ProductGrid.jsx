@@ -14,11 +14,19 @@ export default function ProductGrid({ products, selectedProductIds, onToggleSele
     return matchesCategory && matchesSearch;
   });
 
-  if (sortOption === 'price-low') {
-    filtered.sort((a, b) => a.baseRate - b.baseRate);
-  } else if (sortOption === 'price-high') {
-    filtered.sort((a, b) => b.baseRate - a.baseRate);
-  }
+  filtered.sort((a, b) => {
+    const aDisabled = !!a.isDisabled;
+    const bDisabled = !!b.isDisabled;
+    if (aDisabled && !bDisabled) return 1;  // Disabled item moved to last
+    if (!aDisabled && bDisabled) return -1; // Enabled item kept in front
+
+    if (sortOption === 'price-low') {
+      return a.baseRate - b.baseRate;
+    } else if (sortOption === 'price-high') {
+      return b.baseRate - a.baseRate;
+    }
+    return 0;
+  });
 
   return (
     <>
@@ -34,6 +42,16 @@ export default function ProductGrid({ products, selectedProductIds, onToggleSele
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
           </select>
+        </div>
+      </div>
+
+      {/* Customer Notice Banner for Seasonal and Stock Pricing */}
+      <div className="wholesale-pricing-alert-banner">
+        <div className="banner-icon">
+          <i className="fa-solid fa-circle-info"></i>
+        </div>
+        <div className="banner-text">
+          <strong>Wholesale Pricing Notice:</strong> Quoted rates are factory standard wholesale rates. Price may differ based on the season item or the stock quantity at dispatch.
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import CategoryTabs from './components/CategoryTabs';
 import ProductGrid from './components/ProductGrid';
 import FloatingBar from './components/FloatingBar';
 import OrderLayer from './components/OrderLayer';
+import ModernToastContainer from './components/ModernToastContainer';
 import './styles.css';
 
 export default function App() {
@@ -18,18 +19,43 @@ export default function App() {
   const [isOrderLayerOpen, setIsOrderLayerOpen] = useState(false);
 
   useEffect(() => {
+    // Load locally cached products from Admin
+    const cached = JSON.parse(localStorage.getItem('gsco_catalog_products') || '[]');
+    if (cached.length > 0) {
+      setProducts(cached);
+    }
+
+    // Listen to real-time events across tabs from Admin
+    let channel;
+    if (typeof window !== 'undefined' && window.BroadcastChannel) {
+      channel = new BroadcastChannel('gsco_realtime_channel');
+      channel.onmessage = (event) => {
+        if (event.data?.type === 'PRODUCT_ADDED') {
+          setProducts((prev) => {
+            if (prev.some((p) => p.id === event.data.product.id)) return prev;
+            return [event.data.product, ...prev];
+          });
+        }
+      };
+    }
+
     const productsRef = collection(db, 'products');
     const unsubscribe = onSnapshot(productsRef, (snapshot) => {
       const fetched = snapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         ...docSnap.data()
       }));
-      setProducts(fetched);
+      if (fetched.length > 0) {
+        setProducts(fetched);
+      }
     }, (error) => {
-      console.error('Firestore customer sync error:', error);
+      console.warn('Firestore customer sync info:', error.message);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (channel) channel.close();
+    };
   }, []);
 
   const handleToggleSelect = (productId) => {
@@ -69,6 +95,8 @@ export default function App() {
         selectedCount={selectedProductIds.length}
         onOpenOrderLayer={() => setIsOrderLayerOpen(true)}
       />
+
+      <ModernToastContainer />
 
       <TrustBar />
 

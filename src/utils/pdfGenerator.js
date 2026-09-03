@@ -25,7 +25,7 @@ export function generatePdfInvoice({ company, name, phone, gst, address, selecte
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Quality Mat & Textile Products Manufacturer & Wholesaler', 15, 25);
-  doc.text('Email: govindasamy.textitle@gmail.com | Phone: +91 98429 32756', 15, 30);
+  doc.text('Email: govindasamy.textile@gmail.com | Phone: +91 98429 32756', 15, 30);
 
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
