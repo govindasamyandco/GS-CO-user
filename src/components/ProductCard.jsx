@@ -4,11 +4,11 @@ export default function ProductCard({ product, isSelected, onToggleSelect }) {
   const isBulkUnit = (product.unit === 'per Bundle' || product.unit === 'per Dozen') && product.bundlePieces > 0;
   const perPieceRate = isBulkUnit ? Math.round(product.baseRate / product.bundlePieces) : 0;
   const seasonNotice = product.seasonNotice || 'Price may differ based on the season item or the stock quantity';
-  const isDisabled = !!product.isDisabled;
+  const isOutOfStock = product.inStock === false || product.stockStatus === 'OUT_OF_STOCK' || product.stockQty === 0;
 
   return (
     <div
-      className={`product-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'product-card-disabled' : ''}`}
+      className={`product-card ${isSelected ? 'selected' : ''} ${isDisabled || isOutOfStock ? 'product-card-disabled' : ''}`}
     >
       {/* Top Header Row of the Card */}
       <div className="card-top-bar">
@@ -50,9 +50,19 @@ export default function ProductCard({ product, isSelected, onToggleSelect }) {
           </div>
 
           {/* Available Stock Tag */}
-          <div className="card-stock-row">
+          <div className="card-stock-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <i className="fa-solid fa-warehouse"></i>
-            <span>Available Stock: <strong>{product.stockQty !== undefined ? `${product.stockQty} Bundles` : 'In Stock'}</strong></span>
+            <span>Stock Status: </span>
+            <strong style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              padding: '0.2rem 0.65rem',
+              borderRadius: '999px',
+              backgroundColor: isOutOfStock ? '#fee2e2' : '#dcfce7',
+              color: isOutOfStock ? '#991b1b' : '#166534'
+            }}>
+              {isOutOfStock ? '🔴 Out of Stock' : '🟢 In Stock'}
+            </strong>
           </div>
         </div>
       </div>
@@ -75,6 +85,11 @@ export default function ProductCard({ product, isSelected, onToggleSelect }) {
             <button type="button" className="btn-select-pill btn-disabled" disabled>
               <i className="fa-solid fa-ban"></i>
               <span>Unavailable</span>
+            </button>
+          ) : isOutOfStock ? (
+            <button type="button" className="btn-select-pill btn-disabled" disabled style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fca5a5' }}>
+              <i className="fa-solid fa-box-archive"></i>
+              <span>Out of Stock</span>
             </button>
           ) : (
             <button
