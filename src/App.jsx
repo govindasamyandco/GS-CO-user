@@ -12,6 +12,60 @@ import ModernToastContainer from './components/ModernToastContainer';
 import { calculateMasterPacks } from './utils/packetEngine';
 import './styles.css';
 
+const INITIAL_MAT_PRODUCTS = [
+  {
+    id: 'mat_sample_1',
+    title: 'Panipat Heavy Cotton Checked Door Mat',
+    category: 'Panipat Mat',
+    baseRate: 1450,
+    unit: 'per Bundle',
+    bundlePieces: 10,
+    bundlesPerPack: 8,
+    compressibility: 0.80,
+    minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
+    inStock: true,
+    stockStatus: 'IN_STOCK',
+    stockQty: 100,
+    seasonNotice: 'Price may differ based on the season item or the stock quantity',
+    description: 'Premium quality heavy-duty Panipat checked cotton door mat. High water absorption, durable stitching, washable, suitable for home and office entrances.',
+    imageUrl: '/assets/logo.jpg'
+  },
+  {
+    id: 'mat_sample_2',
+    title: 'Export Jacquard Weave Floor Runner Mat',
+    category: 'Export Mat',
+    baseRate: 2800,
+    unit: 'per Bundle',
+    bundlePieces: 10,
+    bundlesPerPack: 10,
+    compressibility: 0.85,
+    minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
+    inStock: true,
+    stockStatus: 'IN_STOCK',
+    stockQty: 100,
+    seasonNotice: 'Export grade finishing with anti-slip backing',
+    description: 'High-density export quality runner mat. Intricate jacquard pattern, vibrant color fastness, suitable for corridors, hallways, and living rooms.',
+    imageUrl: '/assets/logo.jpg'
+  },
+  {
+    id: 'mat_sample_3',
+    title: 'Local Premium Coir Entrance Mat',
+    category: 'Local Mat',
+    baseRate: 980,
+    unit: 'per Bundle',
+    bundlePieces: 10,
+    bundlesPerPack: 50,
+    compressibility: 0.90,
+    minOrderNotice: 'Purchased per full Bundle (10 Pcs only)',
+    inStock: true,
+    stockStatus: 'IN_STOCK',
+    stockQty: 100,
+    seasonNotice: 'Price may differ based on stock quantity',
+    description: 'Sturdy natural coir entrance mat designed for dirt scraping and heavy foot traffic outdoor entrances.',
+    imageUrl: '/assets/logo.jpg'
+  }
+];
+
 export default function App() {
   const [products, setProducts] = useState([]);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
@@ -25,27 +79,36 @@ export default function App() {
   const [invoiceData, setInvoiceData] = useState({});
 
   useEffect(() => {
-    // Load locally cached products from Admin
+    // 1. Load locally cached products or fallback to initial catalog
     const cached = JSON.parse(localStorage.getItem('gsco_catalog_products') || '[]');
     if (cached.length > 0) {
       setProducts(cached);
+    } else {
+      setProducts(INITIAL_MAT_PRODUCTS);
     }
 
-    // Listen to real-time events across tabs from Admin
+    // 2. Listen to real-time events across tabs from Admin
     let channel;
     if (typeof window !== 'undefined' && window.BroadcastChannel) {
       channel = new BroadcastChannel('gsco_realtime_channel');
       channel.onmessage = (event) => {
         if (event.data?.type === 'PRODUCT_ADDED') {
           setProducts((prev) => {
-            if (prev.some((p) => p.id === event.data.product.id)) return prev;
+            const exists = prev.some((p) => p.id === event.data.product.id);
+            if (exists) return prev;
             return [event.data.product, ...prev];
           });
+        } else if (event.data?.type === 'PRODUCT_UPDATED') {
+          setProducts((prev) =>
+            prev.map((p) => (p.id === event.data.product.id ? { ...p, ...event.data.product } : p))
+          );
+        } else if (event.data?.type === 'PRODUCT_DELETED') {
+          setProducts((prev) => prev.filter((p) => p.id !== event.data.productId));
         }
       };
     }
 
-    // Live sync products from Firestore
+    // 3. Live sync products from Firestore
     const productsRef = collection(db, 'products');
     const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
       const fetched = snapshot.docs.map((docSnap) => ({
@@ -53,13 +116,20 @@ export default function App() {
         ...docSnap.data()
       }));
       if (fetched.length > 0) {
-        setProducts(fetched);
+        setProducts((prev) => {
+          const map = new Map();
+          fetched.forEach((p) => map.set(p.id, p));
+          prev.forEach((p) => {
+            if (!map.has(p.id)) map.set(p.id, p);
+          });
+          return Array.from(map.values());
+        });
       }
     }, (error) => {
       console.warn('Firestore customer sync info:', error.message);
     });
 
-    // Live sync custom categories from Firestore
+    // 4. Live sync custom categories from Firestore
     const categoriesRef = collection(db, 'categories');
     const unsubscribeCategories = onSnapshot(categoriesRef, (snapshot) => {
       const cats = snapshot.docs.map((d) => d.data().name).filter(Boolean);

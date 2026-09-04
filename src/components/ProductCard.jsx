@@ -49,19 +49,15 @@ export default function ProductCard({ product, isSelected, onToggleSelect }) {
             </div>
           </div>
 
-          {/* Available Stock Tag */}
-          <div className="card-stock-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="card-stock-row" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <i className="fa-solid fa-warehouse"></i>
             <span>Stock Status: </span>
             <strong style={{
-              fontSize: '0.8rem',
+              fontSize: '0.82rem',
               fontWeight: 700,
-              padding: '0.2rem 0.65rem',
-              borderRadius: '999px',
-              backgroundColor: isOutOfStock ? '#fee2e2' : '#dcfce7',
-              color: isOutOfStock ? '#991b1b' : '#166534'
+              color: isOutOfStock ? '#b91c1c' : '#15803d'
             }}>
-              {isOutOfStock ? '🔴 Out of Stock' : '🟢 In Stock'}
+              {isOutOfStock ? 'Out of Stock' : 'In Stock'}
             </strong>
           </div>
         </div>
