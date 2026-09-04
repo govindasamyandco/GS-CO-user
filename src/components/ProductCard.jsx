@@ -5,6 +5,7 @@ export default function ProductCard({ product, isSelected, onToggleSelect }) {
   const perPieceRate = isBulkUnit ? Math.round(product.baseRate / product.bundlePieces) : 0;
   const seasonNotice = product.seasonNotice || 'Price may differ based on the season item or the stock quantity';
   const isOutOfStock = product.inStock === false || product.stockStatus === 'OUT_OF_STOCK' || product.stockQty === 0;
+  const isDisabled = Boolean(product.isDisabled);
 
   return (
     <div
