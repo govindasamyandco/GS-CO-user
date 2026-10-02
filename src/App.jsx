@@ -1,57 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, doc, onSnapshot } from './firebase';
+import { db, collection, onSnapshot, doc } from './firebase';
 import TopNav from './components/TopNav';
 import TrustBar from './components/TrustBar';
 import HeroBanner from './components/HeroBanner';
 import CategoryTabs from './components/CategoryTabs';
 import ProductGrid from './components/ProductGrid';
+import ProductCard from './components/ProductCard';
 import ProductDetailModal from './components/ProductDetailModal';
-import LottieAnimation from './components/LottieAnimation';
 import FloatingBar from './components/FloatingBar';
 import OrderLayer from './components/OrderLayer';
 import InvoiceModal from './components/InvoiceModal';
 import ModernToastContainer from './components/ModernToastContainer';
+import LottieAnimation from './components/LottieAnimation';
 import { calculateMasterPacks } from './utils/packetEngine';
 import './styles.css';
 
 export default function App() {
   const [products, setProducts] = useState([]);
-  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
-  const [selectedProductIds, setSelectedProductIds] = useState([]);
-  const [itemQuantities, setItemQuantities] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [dynamicCategories, setDynamicCategories] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState('default');
-  const [activeProductDetail, setActiveProductDetail] = useState(null);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [itemQuantities, setItemQuantities] = useState({});
   const [isOrderLayerOpen, setIsOrderLayerOpen] = useState(false);
+  const [activeProductDetail, setActiveProductDetail] = useState(null);
+  const [sortOption, setSortOption] = useState('default');
+  const [masterBaleRate, setMasterBaleRate] = useState(100);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [invoiceData, setInvoiceData] = useState({});
-  const [masterBaleRate, setMasterBaleRate] = useState(100); // Default ₹100 / Master Bale (Re-editable)
-
-  // Calculate master packs and totals
-  const packInfo = calculateMasterPacks(selectedProductIds, products, itemQuantities);
-
-  let itemsSubtotal = 0;
-  selectedProductIds.forEach((id) => {
-    const prod = products.find((p) => p.id === id);
-    const qty = itemQuantities[id] || 1;
-    if (prod) itemsSubtotal += prod.baseRate * qty;
+  const [globalHidePrices, setGlobalHidePrices] = useState(false);
+  const [invoiceData, setInvoiceData] = useState({
+    company: '',
+    name: '',
+    phone: '',
+    gst: '',
+    address: ''
   });
-  const estBales = packInfo.estPacks || 0;
-  const masterBaleTotal = estBales * (Number(masterBaleRate) >= 0 ? Number(masterBaleRate) : 100);
-  const grandTotal = itemsSubtotal + masterBaleTotal;
 
+  // Real-time Firestore & Broadcast Sync
   useEffect(() => {
-    // 1. Listen to real-time events across tabs from Admin
+    // 1. Instant fallback from localStorage
+    const cached = JSON.parse(localStorage.getItem('gsco_catalog_products') || '[]');
+    if (cached.length > 0) {
+      setProducts(cached);
+      setLoading(false);
+    }
+
+    // 2. Real-time broadcast channel listener for cross-tab speed
     let channel;
     if (typeof window !== 'undefined' && window.BroadcastChannel) {
       channel = new BroadcastChannel('gsco_realtime_channel');
       channel.onmessage = (event) => {
         if (event.data?.type === 'PRODUCT_ADDED') {
           setProducts((prev) => {
-            const exists = prev.some((p) => p.id === event.data.product.id);
-            if (exists) return prev;
+            if (prev.some((p) => p.id === event.data.product.id)) return prev;
             return [event.data.product, ...prev];
           });
         } else if (event.data?.type === 'PRODUCT_UPDATED') {
@@ -61,14 +63,14 @@ export default function App() {
         } else if (event.data?.type === 'PRODUCT_DELETED') {
           setProducts((prev) => prev.filter((p) => p.id !== event.data.productId));
         } else if (event.data?.type === 'MASTER_BALE_RATE_UPDATED') {
-          if (event.data.rate !== undefined) {
-            setMasterBaleRate(Number(event.data.rate));
-          }
+          if (event.data.rate !== undefined) setMasterBaleRate(Number(event.data.rate));
+        } else if (event.data?.type === 'GLOBAL_PRICE_VISIBILITY_UPDATED') {
+          setGlobalHidePrices(Boolean(event.data.hideAllPrices));
         }
       };
     }
 
-    // 2. Live sync products strictly 1-to-1 from Firestore (NO MOCK DATA)
+    // 3. Real-time Firestore listener for live cloud database sync
     const productsRef = collection(db, 'products');
     const unsubscribeProducts = onSnapshot(productsRef, (snapshot) => {
       const fetched = snapshot.docs.map((docSnap) => ({
@@ -76,14 +78,13 @@ export default function App() {
         ...docSnap.data()
       }));
       setProducts(fetched);
-      setIsLoadingCatalog(false);
+      setLoading(false);
       localStorage.setItem('gsco_catalog_products', JSON.stringify(fetched));
     }, (error) => {
-      console.warn('Firestore customer sync info:', error.message);
-      setIsLoadingCatalog(false);
+      console.warn('Firestore products sync info:', error.message);
+      setLoading(false);
     });
 
-    // 3. Live sync custom categories from Firestore
     const categoriesRef = collection(db, 'categories');
     const unsubscribeCategories = onSnapshot(categoriesRef, (snapshot) => {
       const cats = snapshot.docs.map((d) => d.data().name).filter(Boolean);
@@ -107,10 +108,21 @@ export default function App() {
       console.warn('Firestore master bale config sync info:', error.message);
     });
 
+    // 5. Live sync Global Master Price Visibility from Firestore settings/price_config
+    const priceConfigRef = doc(db, 'settings', 'price_config');
+    const unsubscribePriceConfig = onSnapshot(priceConfigRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setGlobalHidePrices(Boolean(snapshot.data().hideAllPrices));
+      }
+    }, (error) => {
+      console.warn('Firestore price config sync info:', error.message);
+    });
+
     return () => {
       unsubscribeProducts();
       unsubscribeCategories();
       unsubscribeConfig();
+      unsubscribePriceConfig();
       if (channel) channel.close();
     };
   }, []);
@@ -129,6 +141,10 @@ export default function App() {
     }
   };
 
+  const handleUpdateQty = (productId, newQty) => {
+    setItemQuantities({ ...itemQuantities, [productId]: newQty });
+  };
+
   const handleRemoveItem = (productId) => {
     setSelectedProductIds(selectedProductIds.filter((id) => id !== productId));
     const updated = { ...itemQuantities };
@@ -136,21 +152,38 @@ export default function App() {
     setItemQuantities(updated);
   };
 
-  const handleUpdateQty = (productId, val) => {
-    setItemQuantities({ ...itemQuantities, [productId]: val });
-  };
+  // Map products to hide price globally if Admin enabled globalHidePrices
+  const displayProducts = React.useMemo(() => {
+    if (!globalHidePrices) return products;
+    return products.map((p) => ({ ...p, hidePrice: true }));
+  }, [products, globalHidePrices]);
+
+  // Calculate packet bundling & subtotal calculations
+  const packInfo = calculateMasterPacks(selectedProductIds, displayProducts, itemQuantities);
+  let grandTotal = 0;
+  selectedProductIds.forEach((id) => {
+    const prod = displayProducts.find((p) => p.id === id);
+    const qty = itemQuantities[id] || 1;
+    if (prod) {
+      grandTotal += prod.baseRate * qty;
+    }
+  });
+
+  const activeProductDetailDisplay = React.useMemo(() => {
+    if (!activeProductDetail) return null;
+    const found = displayProducts.find((p) => p.id === activeProductDetail.id);
+    return found || activeProductDetail;
+  }, [activeProductDetail, displayProducts]);
 
   return (
-    <div className="classic-business-theme">
+    <div className="app-layout">
+      <ModernToastContainer />
       <TopNav
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedCount={selectedProductIds.length}
         onOpenOrderLayer={() => setIsOrderLayerOpen(true)}
-        onSelectCategory={setActiveCategory}
       />
-
-      <ModernToastContainer />
 
       <TrustBar />
 
@@ -160,22 +193,20 @@ export default function App() {
         <CategoryTabs
           activeCategory={activeCategory}
           setActiveCategory={setActiveCategory}
-          dynamicCategories={dynamicCategories}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
+          customCategories={dynamicCategories}
         />
 
-        {isLoadingCatalog ? (
-          <div className="catalog-loading-box">
-            <LottieAnimation animationPath="/assets/loading.json" width={130} height={130} />
-            <p className="catalog-loading-text">Loading fresh wholesale catalog...</p>
+        {loading && products.length === 0 ? (
+          <div className="catalog-loading-state">
+            <LottieAnimation animationPath="/assets/loading.json" width={140} height={140} />
+            <p>Loading factory wholesale mat catalog...</p>
           </div>
         ) : (
           <ProductGrid
-            products={products}
+            products={displayProducts}
             selectedProductIds={selectedProductIds}
             onToggleSelect={handleToggleSelect}
-            onOpenDetail={(product) => setActiveProductDetail(product)}
+            onOpenDetail={(prod) => setActiveProductDetail(prod)}
             activeCategory={activeCategory}
             searchQuery={searchQuery}
             sortOption={sortOption}
@@ -190,14 +221,14 @@ export default function App() {
         onOpenOrderLayer={() => setIsOrderLayerOpen(true)}
       />
 
-      {/* Product Detail / Zoom Modal (Half Page Split on Desktop, Bottom Sheet on Mobile with X Close Mark) */}
+      {/* Product Detail / Zoom Modal */}
       <ProductDetailModal
-        product={activeProductDetail}
-        isOpen={Boolean(activeProductDetail)}
+        product={activeProductDetailDisplay}
+        isOpen={Boolean(activeProductDetailDisplay)}
         onClose={() => setActiveProductDetail(null)}
-        isSelected={activeProductDetail ? selectedProductIds.includes(activeProductDetail.id) : false}
+        isSelected={activeProductDetailDisplay ? selectedProductIds.includes(activeProductDetailDisplay.id) : false}
         onToggleSelect={handleToggleSelect}
-        qty={activeProductDetail ? (itemQuantities[activeProductDetail.id] || 1) : 1}
+        qty={activeProductDetailDisplay ? (itemQuantities[activeProductDetailDisplay.id] || 1) : 1}
         onUpdateQty={handleUpdateQty}
       />
 
@@ -205,7 +236,7 @@ export default function App() {
         isOpen={isOrderLayerOpen}
         onClose={() => setIsOrderLayerOpen(false)}
         selectedProductIds={selectedProductIds}
-        products={products}
+        products={displayProducts}
         itemQuantities={itemQuantities}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}
@@ -227,18 +258,17 @@ export default function App() {
         gst={invoiceData.gst}
         address={invoiceData.address}
         selectedProductIds={selectedProductIds}
-        products={products}
+        products={displayProducts}
         itemQuantities={itemQuantities}
         packInfo={packInfo}
         masterBaleRate={masterBaleRate}
         onUpdateMasterBaleRate={setMasterBaleRate}
       />
 
-      {/* Two-Tier Wholesale Footer from Reference Image */}
+      {/* Footer */}
       <footer className="main-footer">
         <div className="footer-top-tier">
           <div className="footer-container">
-            {/* Brand block */}
             <div className="footer-brand">
               <img
                 src="/assets/logo.jpg"
@@ -252,7 +282,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Address */}
             <div className="footer-col footer-col-address">
               <a href="https://maps.app.goo.gl/651k1dFnksLthHSq6" target="_blank" rel="noreferrer">
                 <i className="fa-solid fa-location-dot"></i>
@@ -260,7 +289,6 @@ export default function App() {
               </a>
             </div>
 
-            {/* Contacts */}
             <div className="footer-col footer-col-contacts">
               <p>
                 <i className="fa-solid fa-envelope"></i>
@@ -272,7 +300,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* WhatsApp Inquiry Pill */}
             <div className="footer-action-col">
               <a
                 href={`https://wa.me/${import.meta.env.VITE_WHATSAPP_NUMBER || '919842932756'}`}
@@ -287,9 +314,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom Dark Blue Copyright Strip */}
-        <div className="footer-bottom-strip">
-          <p>© 2026 Govindasamy & Co. All Rights Reserved. • Powered by React & Firebase Firestore Sync</p>
+        <div className="footer-bottom-tier">
+          <div className="footer-container">
+            <span>© 2026 Govindasamy & Co. All Rights Reserved. • Factory Wholesale Portal</span>
+            <span className="footer-tech-tag">Powered by React & Cloud Firestore Realtime Engine</span>
+          </div>
         </div>
       </footer>
     </div>
