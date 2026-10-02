@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function ProductCard({ product, isSelected, onToggleSelect, onOpenDetail }) {
   const isBulkUnit = (product.unit === 'per Bundle' || product.unit === 'per Dozen') && product.bundlePieces > 0;
@@ -6,6 +6,25 @@ export default function ProductCard({ product, isSelected, onToggleSelect, onOpe
   const seasonNotice = product.seasonNotice || 'Price may differ based on the season item or the stock quantity';
   const isOutOfStock = product.inStock === false || product.stockStatus === 'OUT_OF_STOCK' || product.stockQty === 0;
   const isDisabled = Boolean(product.isDisabled);
+
+  // Multi-image handling (Backward compatible fallback to single imageUrl)
+  const imageList = Array.isArray(product.images) && product.images.length > 0
+    ? product.images.filter(Boolean)
+    : [product.imageUrl || '/assets/logo.jpg'];
+  
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
+
+  const handleNextImg = (e) => {
+    e.stopPropagation();
+    setActiveImgIdx((prev) => (prev + 1) % imageList.length);
+  };
+
+  const handlePrevImg = (e) => {
+    e.stopPropagation();
+    setActiveImgIdx((prev) => (prev - 1 + imageList.length) % imageList.length);
+  };
+
+  const isPriceHidden = Boolean(product.hidePrice);
 
   return (
     <div
@@ -27,25 +46,112 @@ export default function ProductCard({ product, isSelected, onToggleSelect, onOpe
         )}
       </div>
 
-      {/* Main Split Body: Left Logo/Photo Box, Right Details */}
+      {/* Main Split Body: Left Photo Box with Gallery Controls, Right Details */}
       <div className="card-main-split">
         <div
           className="card-image-box"
           onClick={() => onOpenDetail && onOpenDetail(product)}
-          title="Click to view large image & specifications"
+          title="Click to view large images & full specifications"
           role="button"
           tabIndex={0}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onOpenDetail && onOpenDetail(product); }}
+          style={{ position: 'relative' }}
         >
           <img
-            src={product.imageUrl || '/assets/logo.jpg'}
-            alt={product.title}
+            src={imageList[activeImgIdx] || '/assets/logo.jpg'}
+            alt={`${product.title} photo ${activeImgIdx + 1}`}
             className="card-product-img"
             onError={(e) => { e.target.src = '/assets/logo.jpg'; }}
           />
+
+          {/* Multi-Image Slider Arrows & Dots Indicator */}
+          {imageList.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="img-slider-arrow arrow-left"
+                onClick={handlePrevImg}
+                title="Previous photo"
+                style={{
+                  position: 'absolute',
+                  left: '4px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  zIndex: 3
+                }}
+              >
+                <i className="fa-solid fa-chevron-left"></i>
+              </button>
+
+              <button
+                type="button"
+                className="img-slider-arrow arrow-right"
+                onClick={handleNextImg}
+                title="Next photo"
+                style={{
+                  position: 'absolute',
+                  right: '4px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  zIndex: 3
+                }}
+              >
+                <i className="fa-solid fa-chevron-right"></i>
+              </button>
+
+              <div style={{
+                position: 'absolute',
+                bottom: '6px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '4px',
+                zIndex: 3,
+                background: 'rgba(15, 23, 42, 0.55)',
+                padding: '2px 6px',
+                borderRadius: '9999px'
+              }}>
+                {imageList.map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: i === activeImgIdx ? '#f59e0b' : '#cbd5e1',
+                      transition: 'all 0.2s'
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="card-image-zoom-overlay">
             <i className="fa-solid fa-magnifying-glass-plus"></i>
-            <span>Zoom</span>
+            <span>{imageList.length > 1 ? `${imageList.length} Photos` : 'Zoom'}</span>
           </div>
         </div>
 
@@ -60,13 +166,11 @@ export default function ProductCard({ product, isSelected, onToggleSelect, onOpe
           <p className="card-desc">{product.description || 'High quality woven durable mat.'}</p>
 
           <div className="card-tags-list">
-            {/* Tag 1: Purchase Rule Tag */}
             <div className="card-tag card-tag-yellow">
               <i className="fa-solid fa-box-open"></i>
               <span>{product.minOrderNotice || (isBulkUnit ? 'Purchased per full Bundle only' : 'Available for single piece purchase')}</span>
             </div>
 
-            {/* Tag 2: Seasonal / Stock Price Notice Tag */}
             <div className="card-tag card-tag-yellow">
               <i className="fa-solid fa-circle-info"></i>
               <span>{seasonNotice}</span>
@@ -91,12 +195,21 @@ export default function ProductCard({ product, isSelected, onToggleSelect, onOpe
       <div className="card-footer-row">
         <div className="card-rate-col">
           <span className="card-rate-label">WHOLESALE RATE</span>
-          <div className="card-rate-price">
-            ₹{product.baseRate ? product.baseRate.toLocaleString('en-IN') : 0}
-            <span className="card-rate-unit">/{product.unit ? product.unit.replace('per ', '') : 'Bundle'}</span>
-          </div>
-          {isBulkUnit && (
-            <div className="card-per-pc-hint">(~ ₹{perPieceRate.toLocaleString('en-IN')}/pc)</div>
+          {isPriceHidden ? (
+            <div className="card-rate-price" style={{ color: '#0284c7', fontSize: '0.98rem', fontWeight: 800 }}>
+              <i className="fa-solid fa-comment-dots" style={{ marginRight: '0.3rem', color: '#0369a1' }}></i>
+              Price on Inquiry
+            </div>
+          ) : (
+            <>
+              <div className="card-rate-price">
+                ₹{product.baseRate ? product.baseRate.toLocaleString('en-IN') : 0}
+                <span className="card-rate-unit">/{product.unit ? product.unit.replace('per ', '') : 'Bundle'}</span>
+              </div>
+              {isBulkUnit && (
+                <div className="card-per-pc-hint">(~ ₹{perPieceRate.toLocaleString('en-IN')}/pc)</div>
+              )}
+            </>
           )}
         </div>
 

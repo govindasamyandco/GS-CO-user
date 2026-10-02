@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '919842932756';
 
@@ -11,6 +11,13 @@ export default function ProductDetailModal({
   qty = 1,
   onUpdateQty
 }) {
+  const [selectedImgIdx, setSelectedImgIdx] = useState(0);
+
+  // Reset selected image index when product changes
+  useEffect(() => {
+    setSelectedImgIdx(0);
+  }, [product]);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -35,14 +42,25 @@ export default function ProductDetailModal({
   const seasonNotice = product.seasonNotice || 'Price may differ based on the season item or the stock quantity';
   const isOutOfStock = product.inStock === false || product.stockStatus === 'OUT_OF_STOCK' || product.stockQty === 0;
   const isDisabled = Boolean(product.isDisabled);
+  const isPriceHidden = Boolean(product.hidePrice);
+
+  // Multi-image list (Fallback to imageUrl for full backward compatibility)
+  const imageList = Array.isArray(product.images) && product.images.length > 0
+    ? product.images.filter(Boolean)
+    : [product.imageUrl || '/assets/logo.jpg'];
+
   const currentQty = qty || 1;
   const subtotal = (product.baseRate || 0) * currentQty;
 
   const handleWhatsAppInquiry = () => {
+    const priceText = isPriceHidden
+      ? 'Price on Inquiry'
+      : `Rs. ${(product.baseRate || 0).toLocaleString('en-IN')} / ${product.unit ? product.unit.replace('per ', '') : 'Bundle'}`;
+
     const msg = `*PRODUCT INQUIRY - GOVINDASAMY & CO*\n` +
       `📦 *Item*: ${product.title}\n` +
       `🏷️ *Category*: ${product.category || 'Panipat Mat'}\n` +
-      `💰 *Wholesale Rate*: Rs. ${(product.baseRate || 0).toLocaleString('en-IN')} / ${product.unit ? product.unit.replace('per ', '') : 'Bundle'}\n` +
+      `💰 *Wholesale Rate*: ${priceText}\n` +
       `🔢 *Quantity Interested*: ${currentQty} ${product.unit ? product.unit.replace('per ', '') : 'Bundle'}(s)\n` +
       `Please let me know current availability & transport dispatch terms.`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -62,14 +80,14 @@ export default function ProductDetailModal({
           <i className="fa-solid fa-xmark"></i>
         </button>
 
-        {/* 2-Column Split: Big Image on Left, Rich Details on Right */}
+        {/* 2-Column Split: Big Image Gallery on Left, Rich Details on Right */}
         <div className="product-detail-split">
-          {/* Left Column: Big Image Display */}
+          {/* Left Column: Big Image Display with Multi-Image Thumbnail Selector */}
           <div className="detail-image-column">
             <div className="detail-image-card">
               <img
-                src={product.imageUrl || '/assets/logo.jpg'}
-                alt={product.title}
+                src={imageList[selectedImgIdx] || '/assets/logo.jpg'}
+                alt={`${product.title} photo ${selectedImgIdx + 1}`}
                 className="detail-big-image"
                 onError={(e) => { e.target.src = '/assets/logo.jpg'; }}
               />
@@ -82,8 +100,33 @@ export default function ProductDetailModal({
                 )}
               </div>
             </div>
-            <p className="detail-image-hint">
-              <i className="fa-solid fa-magnifying-glass-plus"></i> High-resolution wholesale factory product
+
+            {/* Thumbnail Row if product has multiple photos (up to 3) */}
+            {imageList.length > 1 && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', justifyContent: 'center' }}>
+                {imageList.map((imgUrl, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedImgIdx(i)}
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '8px',
+                      border: selectedImgIdx === i ? '2.5px solid #0284c7' : '1.5px solid #cbd5e1',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      opacity: selectedImgIdx === i ? 1 : 0.65,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <img src={imgUrl} alt={`Thumb ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <p className="detail-image-hint" style={{ marginTop: '0.4rem' }}>
+              <i className="fa-solid fa-magnifying-glass-plus"></i> Factory product photo ({selectedImgIdx + 1} of {imageList.length})
             </p>
           </div>
 
@@ -103,17 +146,24 @@ export default function ProductDetailModal({
             {/* Wholesale Price Box */}
             <div className="detail-price-box">
               <span className="detail-price-label">FACTORY WHOLESALE RATE</span>
-              <div className="detail-price-row">
-                <span className="detail-price-amount">
-                  ₹{(product.baseRate || 0).toLocaleString('en-IN')}
-                </span>
-                <span className="detail-price-unit">/{product.unit ? product.unit.replace('per ', '') : 'Bundle'}</span>
-                {isBulkUnit && (
-                  <span className="detail-per-piece-tag">
-                    (~ ₹{perPieceRate.toLocaleString('en-IN')} / piece)
+              {isPriceHidden ? (
+                <div className="detail-price-row" style={{ color: '#0284c7', fontSize: '1.2rem', fontWeight: 800 }}>
+                  <i className="fa-solid fa-comment-dots" style={{ marginRight: '0.4rem', color: '#0369a1' }}></i>
+                  Price on Inquiry
+                </div>
+              ) : (
+                <div className="detail-price-row">
+                  <span className="detail-price-amount">
+                    ₹{(product.baseRate || 0).toLocaleString('en-IN')}
                   </span>
-                )}
-              </div>
+                  <span className="detail-price-unit">/{product.unit ? product.unit.replace('per ', '') : 'Bundle'}</span>
+                  {isBulkUnit && (
+                    <span className="detail-per-piece-tag">
+                      (~ ₹{perPieceRate.toLocaleString('en-IN')} / piece)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Tags & Notice List */}
@@ -196,10 +246,12 @@ export default function ProductDetailModal({
                   </div>
                 </div>
 
-                <div className="detail-subtotal-display">
-                  <span className="subtotal-label">Subtotal:</span>
-                  <strong className="subtotal-val">₹{subtotal.toLocaleString('en-IN')}</strong>
-                </div>
+                {!isPriceHidden && (
+                  <div className="detail-subtotal-display">
+                    <span className="subtotal-label">Subtotal:</span>
+                    <strong className="subtotal-val">₹{subtotal.toLocaleString('en-IN')}</strong>
+                  </div>
+                )}
               </div>
 
               <div className="detail-button-group">
