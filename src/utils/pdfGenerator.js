@@ -71,6 +71,7 @@ export async function generatePdfInvoice({
       qty,
       rate: prod.baseRate,
       subtotal,
+      hidePrice: Boolean(prod.hidePrice),
       hasRealImage: Boolean(prodImgBase64),
       imageSrc: prodImgBase64
     };
@@ -266,8 +267,8 @@ export async function generatePdfInvoice({
                       </div>
                     </div>
                   </td>
-                  <td style="padding: 8px 10px; text-align: right; font-weight: 600; color: #334155; font-size: 0.82rem;">Rs. ${it.rate.toLocaleString('en-IN')}</td>
-                  <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #031b4e; font-size: 0.88rem; font-family: 'Outfit', sans-serif;">Rs. ${it.subtotal.toLocaleString('en-IN')}</td>
+                  <td style="padding: 8px 10px; text-align: right; font-weight: 600; color: #334155; font-size: 0.82rem;">${it.hidePrice ? 'Price on Inquiry' : `Rs. ${it.rate.toLocaleString('en-IN')}`}</td>
+                  <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #031b4e; font-size: 0.88rem; font-family: 'Outfit', sans-serif;">${it.hidePrice ? 'Price on Inquiry' : `Rs. ${it.subtotal.toLocaleString('en-IN')}`}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -290,7 +291,7 @@ export async function generatePdfInvoice({
           <div style="background: #031b4e; color: #ffffff; flex: 1.3; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 3px;">
             <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.72rem; color: rgba(255,255,255,0.85);">
               <span>Products Subtotal:</span>
-              <strong style="color: #ffffff;">Rs. ${itemsSubtotal.toLocaleString('en-IN')}</strong>
+              <strong style="color: #ffffff;">${items.some(i => i.hidePrice) ? 'Price on Inquiry' : `Rs. ${itemsSubtotal.toLocaleString('en-IN')}`}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.72rem; color: rgba(255,255,255,0.85); padding-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.3);">
               <span>Bale Packaging (${estBales} × ₹${currentBaleRate}):</span>
@@ -298,7 +299,7 @@ export async function generatePdfInvoice({
             </div>
             <div style="display: flex; justify-content: space-between; align-items: baseline; width: 100%; margin-top: 2px;">
               <span style="font-size: 0.74rem; font-weight: 700; letter-spacing: 0.8px; color: #d97706;">GRAND TOTAL</span>
-              <span style="font-size: 1.35rem; font-weight: 900; color: #ffffff; line-height: 1.1;">Rs. ${grandTotal.toLocaleString('en-IN')}</span>
+              <span style="font-size: 1.35rem; font-weight: 900; color: #ffffff; line-height: 1.1;">${items.some(i => i.hidePrice) ? 'Price on Inquiry' : `Rs. ${grandTotal.toLocaleString('en-IN')}`}</span>
             </div>
           </div>
         </div>

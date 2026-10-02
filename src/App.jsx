@@ -28,7 +28,9 @@ export default function App() {
   const [sortOption, setSortOption] = useState('default');
   const [masterBaleRate, setMasterBaleRate] = useState(100);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [globalHidePrices, setGlobalHidePrices] = useState(false);
+  const [globalHidePrices, setGlobalHidePrices] = useState(
+    localStorage.getItem('gsco_global_hide_prices') === 'true'
+  );
   const [invoiceData, setInvoiceData] = useState({
     company: '',
     name: '',
@@ -65,7 +67,9 @@ export default function App() {
         } else if (event.data?.type === 'MASTER_BALE_RATE_UPDATED') {
           if (event.data.rate !== undefined) setMasterBaleRate(Number(event.data.rate));
         } else if (event.data?.type === 'GLOBAL_PRICE_VISIBILITY_UPDATED') {
-          setGlobalHidePrices(Boolean(event.data.hideAllPrices));
+          const hideState = Boolean(event.data.hideAllPrices);
+          setGlobalHidePrices(hideState);
+          localStorage.setItem('gsco_global_hide_prices', String(hideState));
         }
       };
     }
@@ -95,7 +99,7 @@ export default function App() {
       console.warn('Firestore categories sync info:', error.message);
     });
 
-    // 4. Live sync global master bale rate from Firestore
+    // 4. Live sync Global Master Bale Rate from Firestore
     const configRef = doc(db, 'settings', 'master_bale_config');
     const unsubscribeConfig = onSnapshot(configRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -112,7 +116,9 @@ export default function App() {
     const priceConfigRef = doc(db, 'settings', 'price_config');
     const unsubscribePriceConfig = onSnapshot(priceConfigRef, (snapshot) => {
       if (snapshot.exists()) {
-        setGlobalHidePrices(Boolean(snapshot.data().hideAllPrices));
+        const hideState = Boolean(snapshot.data().hideAllPrices);
+        setGlobalHidePrices(hideState);
+        localStorage.setItem('gsco_global_hide_prices', String(hideState));
       }
     }, (error) => {
       console.warn('Firestore price config sync info:', error.message);
@@ -152,11 +158,21 @@ export default function App() {
     setItemQuantities(updated);
   };
 
-  // Map products to hide price globally if Admin enabled globalHidePrices
+  // Map products to hide price globally if Admin enabled globalHidePrices or individual product hidePrice
   const displayProducts = React.useMemo(() => {
-    if (!globalHidePrices) return products;
-    return products.map((p) => ({ ...p, hidePrice: true }));
+    return products.map((p) => ({
+      ...p,
+      hidePrice: globalHidePrices || Boolean(p.hidePrice)
+    }));
   }, [products, globalHidePrices]);
+
+  const hasAnyHiddenPrice = React.useMemo(() => {
+    if (globalHidePrices) return true;
+    return selectedProductIds.some((id) => {
+      const p = products.find((prod) => prod.id === id);
+      return Boolean(p?.hidePrice);
+    });
+  }, [selectedProductIds, products, globalHidePrices]);
 
   // Calculate packet bundling & subtotal calculations
   const packInfo = calculateMasterPacks(selectedProductIds, displayProducts, itemQuantities);
@@ -218,6 +234,7 @@ export default function App() {
       <FloatingBar
         selectedCount={selectedProductIds.length}
         grandTotal={grandTotal}
+        hasAnyHiddenPrice={hasAnyHiddenPrice}
         onOpenOrderLayer={() => setIsOrderLayerOpen(true)}
       />
 
@@ -238,6 +255,7 @@ export default function App() {
         selectedProductIds={selectedProductIds}
         products={displayProducts}
         itemQuantities={itemQuantities}
+        hasAnyHiddenPrice={hasAnyHiddenPrice}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}
         masterBaleRate={masterBaleRate}
@@ -260,6 +278,7 @@ export default function App() {
         selectedProductIds={selectedProductIds}
         products={displayProducts}
         itemQuantities={itemQuantities}
+        hasAnyHiddenPrice={hasAnyHiddenPrice}
         packInfo={packInfo}
         masterBaleRate={masterBaleRate}
         onUpdateMasterBaleRate={setMasterBaleRate}

@@ -15,6 +15,7 @@ export default function InvoiceModal({
   selectedProductIds,
   products,
   itemQuantities,
+  hasAnyHiddenPrice = false,
   packInfo,
   masterBaleRate = 100,
   onUpdateMasterBaleRate
@@ -52,6 +53,7 @@ export default function InvoiceModal({
       qty,
       rate: prod.baseRate,
       subtotal,
+      hidePrice: Boolean(prod.hidePrice),
       imageUrl: prod.imageUrl || '/assets/logo.jpg'
     });
   });
@@ -321,8 +323,12 @@ export default function InvoiceModal({
                             </div>
                           </div>
                         </td>
-                        <td className="table-rate-cell">Rs. {it.rate.toLocaleString('en-IN')}</td>
-                        <td className="table-subtotal-cell">Rs. {it.subtotal.toLocaleString('en-IN')}</td>
+                        <td className="table-rate-cell">
+                          {it.hidePrice || hasAnyHiddenPrice ? 'Price on Inquiry' : `Rs. ${it.rate.toLocaleString('en-IN')}`}
+                        </td>
+                        <td className="table-subtotal-cell">
+                          {it.hidePrice || hasAnyHiddenPrice ? 'Price on Inquiry' : `Rs. ${it.subtotal.toLocaleString('en-IN')}`}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -348,7 +354,7 @@ export default function InvoiceModal({
               <div className="grand-total-col">
                 <div className="invoice-subtotal-line">
                   <span>Products Subtotal:</span>
-                  <strong>Rs. {itemsSubtotal.toLocaleString('en-IN')}</strong>
+                  <strong>{hasAnyHiddenPrice ? 'Price on Inquiry' : `Rs. ${itemsSubtotal.toLocaleString('en-IN')}`}</strong>
                 </div>
                 <div className="invoice-bale-line">
                   <span>📦 Bale Charges: {estBales} {estBales === 1 ? 'Bale' : 'Bales'} @ ₹{currentBaleRate}/bale =</span>
@@ -356,7 +362,9 @@ export default function InvoiceModal({
                 </div>
                 <div className="invoice-grand-line">
                   <span className="grand-total-label">GRAND TOTAL ────</span>
-                  <span className="grand-total-amount">Rs. {grandTotal.toLocaleString('en-IN')}</span>
+                  <span className="grand-total-amount">
+                    {hasAnyHiddenPrice ? 'Price on Inquiry' : `Rs. ${grandTotal.toLocaleString('en-IN')}`}
+                  </span>
                 </div>
               </div>
             </div>

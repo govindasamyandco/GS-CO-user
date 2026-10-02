@@ -14,6 +14,7 @@ export default function OrderLayer({
   selectedProductIds,
   products,
   itemQuantities,
+  hasAnyHiddenPrice = false,
   onUpdateQty,
   onRemoveItem,
   onOpenInvoicePreview,
@@ -256,15 +257,18 @@ export default function OrderLayer({
 
     validItems.forEach((item, index) => {
       const subtotal = item.qty * item.unitRate;
+      const isItemPriceHidden = hasAnyHiddenPrice || item.hidePrice;
+      const rateStr = isItemPriceHidden ? 'Price on Inquiry' : `Rs. ${item.unitRate.toLocaleString('en-IN')}`;
+      const totalStr = isItemPriceHidden ? 'Price on Inquiry' : `Rs. ${subtotal.toLocaleString('en-IN')}`;
       message += `${index + 1}. *${item.title}*\n`;
-      message += `   Quantity: ${item.qty} Bundle(s) | Rate: Rs. ${item.unitRate.toLocaleString('en-IN')} | Total: Rs. ${subtotal.toLocaleString('en-IN')}\n`;
+      message += `   Quantity: ${item.qty} Bundle(s) | Rate: ${rateStr} | Total: ${totalStr}\n`;
     });
 
     message += `====================================\n`;
     message += `📦 *Total Mat Quantity*: ${totalUnits} Bundle(s)\n`;
-    message += `🏷️ *Products Subtotal*: Rs. ${itemsSubtotal.toLocaleString('en-IN')}\n`;
+    message += `🏷️ *Products Subtotal*: ${hasAnyHiddenPrice ? 'Price on Inquiry' : `Rs. ${itemsSubtotal.toLocaleString('en-IN')}`}\n`;
     message += `📦 *Est. Master Bales*: ${estBales} Master ${estBales === 1 ? 'Bale' : 'Bales'} @ Rs. ${currentBaleRate}/Bale = Rs. ${masterBaleTotal.toLocaleString('en-IN')}\n`;
-    message += `💰 *TOTAL ESTIMATED GRAND RATE*: *Rs. ${grandTotal.toLocaleString('en-IN')}*\n`;
+    message += `💰 *TOTAL ESTIMATED GRAND RATE*: *${hasAnyHiddenPrice ? 'Price on Inquiry' : `Rs. ${grandTotal.toLocaleString('en-IN')}`}*\n`;
     message += `🏷️ *Wholesale Notice*: Price may differ based on the season item or the stock quantity at dispatch.\n`;
     message += `====================================\n`;
     message += `Please confirm availability & dispatch transport details. Thank you!`;
@@ -364,7 +368,11 @@ export default function OrderLayer({
                           <div className="order-item-meta">
                             <h5 className="order-item-name">{prod.title}</h5>
                             <span className="order-item-rate">
-                              ₹{prod.baseRate.toLocaleString('en-IN')} / {prod.unit ? prod.unit.replace('per ', '') : 'Bundle'}
+                              {prod.hidePrice || hasAnyHiddenPrice ? (
+                                <span style={{ color: '#0284c7', fontWeight: 700 }}>Price on Inquiry</span>
+                              ) : (
+                                `₹${prod.baseRate.toLocaleString('en-IN')} / ${prod.unit ? prod.unit.replace('per ', '') : 'Bundle'}`
+                              )}
                             </span>
                           </div>
                         </div>
@@ -390,7 +398,13 @@ export default function OrderLayer({
                             </button>
                           </div>
 
-                          <span className="order-item-subtotal">₹{subtotal.toLocaleString('en-IN')}</span>
+                          <span className="order-item-subtotal">
+                            {prod.hidePrice || hasAnyHiddenPrice ? (
+                              <span style={{ color: '#0284c7', fontWeight: 700 }}>Price on Inquiry</span>
+                            ) : (
+                              `₹${subtotal.toLocaleString('en-IN')}`
+                            )}
+                          </span>
 
                           <button
                             type="button"
@@ -573,7 +587,9 @@ export default function OrderLayer({
               </div>
               <div className="calc-row">
                 <span>Products Subtotal:</span>
-                <strong style={{ color: '#031b4e' }}>₹{itemsSubtotal.toLocaleString('en-IN')}</strong>
+                <strong style={{ color: '#031b4e' }}>
+                  {hasAnyHiddenPrice ? 'Price on Inquiry' : `₹${itemsSubtotal.toLocaleString('en-IN')}`}
+                </strong>
               </div>
 
               {/* Master Bale Cost & Read-Only Factory Packing Section */}
@@ -595,7 +611,9 @@ export default function OrderLayer({
 
               <div className="calc-row calc-row-total">
                 <span>Grand Total (Products + Bales):</span>
-                <strong className="calc-grand-total">₹{grandTotal.toLocaleString('en-IN')}</strong>
+                <strong className="calc-grand-total">
+                  {hasAnyHiddenPrice ? 'Price on Inquiry' : `₹${grandTotal.toLocaleString('en-IN')}`}
+                </strong>
               </div>
             </div>
 
