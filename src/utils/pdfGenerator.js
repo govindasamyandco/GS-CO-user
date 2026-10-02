@@ -67,7 +67,7 @@ export async function generatePdfInvoice({
       title: prod.title,
       category: prod.category || 'Panipat Mat',
       unit: prod.unit ? prod.unit.replace('per ', '') : 'Bundle',
-      bundlePieces: prod.bundlePieces || 10,
+      bundlePieces: prod.bundlePieces || 50,
       qty,
       rate: prod.baseRate,
       subtotal,
